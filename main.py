@@ -3,7 +3,6 @@ from spotify.listener import RedirectListener
 from spotify.net import authorize
 from spotify.net import get_playlists
 import spotify.const as const
-from spotify.serializers.playlist import Playlist
 import app.utils as utils
 from auth_dialog import AuthDialog
 from playlists_ctrl import PlaylistsCtrl
@@ -50,7 +49,12 @@ class MainWindow(wx.Frame):
             self.token = value
             wx.CallAfter(self.destroy_auth_dialog)
         elif status == "authorize":
-            url = authorize()
+            url = authorize((
+                const.PLAYLIST_MODIFY_PUBLIC,
+                const.PLAYLIST_MODIFY_PRIVATE,
+                const.PLAYLIST_READ_COLLABORATIVE,
+                const.PLAYLIST_READ_PRIVATE
+            ))
             wx.CallAfter(self.open_auth_dialog, url=url)
         elif status == "http-error":
             print(f'Error with Authentication. code: {value.status_code} and reason: {value.response.reason}')

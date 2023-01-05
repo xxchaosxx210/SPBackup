@@ -17,7 +17,7 @@ class PlaylistsCtrl(wx.ListCtrl):
 
         # Add the playlists to the list control
         for playlist in playlists:
-            plst = Playlist(**playlist)
+            plst = Playlist.from_orm(playlist)
             self.Append((
               plst.name  , plst.description, plst.owner.display_name, plst.id, str(plst.tracks.total)
             ))

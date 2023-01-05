@@ -1,21 +1,27 @@
 import base64
 
+# Our Application Ids keep hidden!!!!
 CLIENT_ID = "615b6e76033644d5b4cb68b7e11cbeb4"
 CLIENT_SECRET = "88130c005e2041e98f1529e5f7aaf6e3"
 
+# URi to be redirected when authorizing using the oauth method
 REDIRECT_URI = "http://localhost:3000"
 
-PLAYLIST_SCOPES = (
-    "playlist-read-private",
-    "playlist-modify-public",
-    "playlist-modify-private",
-    "playlist-read-collaborative"
-)
+# Playlist permission scopes
+PLAYLIST_READ_PRIVATE = "playlist-read-private"
+PLAYLIST_MODIFY_PUBLIC = "playlist-modify-public"
+PLAYLIST_MODIFY_PRIVATE = "playlist-modify-private"
+PLAYLIST_READ_COLLABORATIVE = "playlist-read-collaborative"
 
-AUTH_URL = 'https://accounts.spotify.com/authorize'
-TOKEN_BASED_AUTH = "https://accounts.spotify.com/api/token"
+# Authenticating Uri
+URL_AUTHORIZE = 'https://accounts.spotify.com/authorize'
+URL_TOKEN_AUTHENTICATE = "https://accounts.spotify.com/api/token"
 
+# ENDPOINT API URIs
+URI_PLAYLISTS = "https://api.spotify.com/v1/me/playlists"
+URI_PLAYLIST = lambda playlist_id : f"https://api.spotify.com/v1/playlists/{playlist_id}"
+URI_PLAYLIST_TRACKS = lambda playlist_id : f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+
+# Our encoded client_id and client_secret header. This will be changed on release to server side only
 AUTH_HEADER = base64.b64encode(
     f'{CLIENT_ID}:{CLIENT_SECRET}'.encode('utf-8'))
-
-ACCESS_TOKEN = None

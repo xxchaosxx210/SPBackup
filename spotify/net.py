@@ -10,17 +10,27 @@ def create_auth_header():
         'Authorization': f'Basic {const.AUTH_HEADER.decode("utf-8")}'
     }
 
-def authorize():
+def create_auth_token_header(token) -> dict:
+    return {"Authorization": f"Bearer {token}"}
+
+
+def authorize(scopes: tuple):
+    """authorize(scopes)
+
+    Args:
+        scopes (tuple): tuple array of scope strings. Check the const file 
+
+    Returns:
+        _type_: returns the response url to follow to authenticate and retrieve the token auth
+    """
     # Set up the authorization request
     auth_params = {
         "response_type": "code",
         "redirect_uri": const.REDIRECT_URI,
-        "scope": " ".join(const.PLAYLIST_SCOPES),
+        "scope": " ".join(scopes),
         "client_id": const.CLIENT_ID,
     }
-    response = requests.get(
-        const.AUTH_URL, 
-        params=auth_params)
+    response = requests.get(const.URL_AUTHORIZE, params=auth_params)
     response.raise_for_status()
     return response.url
 
@@ -31,7 +41,7 @@ def exchange_code_for_token(code: str) -> str:
         code (str): auth code, to get this use the RedirectListener, exchange_code_for_token will be called within that thread
 
     Returns:
-        str: _description_
+        str: returns the access token used to authenticate during API calls
     """
     token_data = {
         "grant_type": "authorization_code",
@@ -39,21 +49,18 @@ def exchange_code_for_token(code: str) -> str:
         "redirect_uri": const.REDIRECT_URI,
     }
     token_headers = create_auth_header()
-    response = requests.post(const.TOKEN_BASED_AUTH, data=token_data, headers=token_headers)
+    response = requests.post(const.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers)
     response.raise_for_status()
     return response.json()["access_token"]
 
 async def get_playlists(token: str) -> tuple:
   # Set the authorization header with the access token
-  headers = {"Authorization": "Bearer " + token}
-
-  # Set the URL for the playlist endpoint
-  url = "https://api.spotify.com/v1/me/playlists"
+  headers = create_auth_token_header(token)
 
   # Create an asyncio session to send the request
   async with aiohttp.ClientSession() as session:
     # Send a GET request to the playlist endpoint using the session
-    async with session.get(url, headers=headers) as response:
+    async with session.get(const.URI_PLAYLISTS, headers=headers) as response:
       # If the request was successful, return the list of playlists
       if response.status == 200:
         playlists = await response.json()
@@ -68,29 +75,19 @@ async def get_playlists(token: str) -> tuple:
       )
 
 def get_playlist(token: str, playlist_id: str) -> dict:
-    # Set the authorization header
-    auth_header = f"Bearer {token}"
-    headers = {
-        "Authorization": auth_header
-    }
+    headers = create_auth_token_header(token)
     # Send the request to the Spotify API
-    response = requests.get(f"https://api.spotify.com/v1/playlists/{playlist_id}", headers=headers)
+    response = requests.get(const.URI_PLAYLIST(playlist_id), headers=headers)
     # Check the response status code
     response.raise_for_status()
     # Return the playlist data
     return response.json()
 
-def get_playlist_items(access_token, playlist_id):
-  # Set the API endpoint
-  api_endpoint = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-
-  # Set the headers
-  headers = {
-    "Authorization": f"Bearer {access_token}"
-  }
+def get_playlist_items(token, playlist_id):
+  headers = create_auth_token_header(token)
 
   # Send the request to the API endpoint
-  response = requests.get(api_endpoint, headers=headers)
+  response = requests.get(const.URI_PLAYLIST_TRACKS(playlist_id), headers=headers)
 
   # Raise an exception if the request fails
   response.raise_for_status()
