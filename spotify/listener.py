@@ -1,5 +1,6 @@
 import threading
 import socket
+import requests
 from urllib.parse import parse_qs
 from spotify.net import exchange_code_for_token
 import time
@@ -31,8 +32,11 @@ class RedirectListener(threading.Thread):
                     code = string[:first_space]
                     # Seems to be an issue with responding soon after. Set delay to get auth token
                     time.sleep(2)
-                    token = exchange_code_for_token(code)
-                    self.callback("token", token)
+                    try:
+                        token = exchange_code_for_token(code)
+                        self.callback("token", token)
+                    except requests.HTTPError as err:
+                        self.callback("http-error", err)
                     # Set the stop event
                     self.stop_event.set()
 

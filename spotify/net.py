@@ -1,4 +1,5 @@
 import requests
+import aiohttp
 import spotify.const as const
 from spotify.serializers.tracks import Model as TracksModel
 
@@ -42,12 +43,29 @@ def exchange_code_for_token(code: str) -> str:
     response.raise_for_status()
     return response.json()["access_token"]
 
-def get_playlists(token: str) -> list:
-    response = requests.get('https://api.spotify.com/v1/me/playlists', headers={
-        'Authorization': f'Bearer {token}'
-    })
-    response.raise_for_status()
-    return response.json()["items"]
+async def get_playlists(token: str) -> tuple:
+  # Set the authorization header with the access token
+  headers = {"Authorization": "Bearer " + token}
+
+  # Set the URL for the playlist endpoint
+  url = "https://api.spotify.com/v1/me/playlists"
+
+  # Create an asyncio session to send the request
+  async with aiohttp.ClientSession() as session:
+    # Send a GET request to the playlist endpoint using the session
+    async with session.get(url, headers=headers) as response:
+      # If the request was successful, return the list of playlists
+      if response.status == 200:
+        playlists = await response.json()
+        return (
+            "ok",
+            playlists["items"]
+        )
+      # If the request was not successful, raise an exception
+      return (
+        "error",
+        response
+      )
 
 def get_playlist(token: str, playlist_id: str) -> dict:
     # Set the authorization header
@@ -78,8 +96,6 @@ def get_playlist_items(access_token, playlist_id):
   response.raise_for_status()
 
   # Extract the JSON response
-
   data = response.json()
-
   model = TracksModel.from_orm(data)
   return model

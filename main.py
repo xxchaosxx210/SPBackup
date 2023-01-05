@@ -7,6 +7,7 @@ from spotify.serializers.playlist import Playlist
 import app.utils as utils
 from auth_dialog import AuthDialog
 from requests import HTTPError
+import asyncio
 
 class MainWindow(wx.Frame):
 
@@ -26,19 +27,24 @@ class MainWindow(wx.Frame):
         if not self.token:
             self.start_listening_for_redirect()
         else:
-            try:
-                playlists = get_playlists(self.token)
-                for json_playlist in playlists:
-                    playlist = Playlist(**json_playlist)
-                    print(f'Name: {playlist.name}, ID: {playlist.id}')
-            except HTTPError as err:
-                if err.response.reason == "Unauthorized":
-                    del self.token
-                    utils.remove()
-                    self.start_listening_for_redirect()
-
+            asyncio.run(self.retrieve_playlists())
     
-    def on_listener_response(self, status: str, value: str):
+    async def retrieve_playlists(self):
+        status, response = await get_playlists(self.token)
+        if status == "ok":
+            for json_playlist in response:
+                playlist = Playlist(**json_playlist)
+                print(f'Name: {playlist.name}, ID: {playlist.id}')
+        else:
+            if response.status == 401:
+                print(f'Error retrieving get_playlists with Status code: {response.status} and Reason: {response.reason}')
+                print("...Removing token file")
+                utils.remove()
+                print("Please restart the App again")
+            else:
+                print(f'Error retrieving get_playlists with Status code: {response.status} and Reason: {response.reason}')
+    
+    def on_listener_response(self, status: str, value: any):
         if status == "token":
             # save the token to file
             utils.save(value)
@@ -47,6 +53,9 @@ class MainWindow(wx.Frame):
         elif status == "authorize":
             url = authorize()
             wx.CallAfter(self.open_auth_dialog, url=url)
+        elif status == "http-error":
+            print(f'Error with Authentication. code: {value.status_code} and reason: {value.response.reason}')
+            wx.CallAfter(self.destroy_auth_dialog)
 
     def open_auth_dialog(self, url):
         self.auth_dialog = AuthDialog(self, url)
