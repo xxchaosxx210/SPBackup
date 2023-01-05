@@ -6,7 +6,6 @@ import spotify.const as const
 from spotify.serializers.playlist import Playlist
 import app.utils as utils
 from auth_dialog import AuthDialog
-from requests import HTTPError
 import asyncio
 
 class MainWindow(wx.Frame):

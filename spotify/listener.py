@@ -3,7 +3,20 @@ import socket
 import requests
 from urllib.parse import parse_qs
 from spotify.net import exchange_code_for_token
-import time
+
+HTML = """
+<html>
+  <head>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  </head>
+  <body>
+    <div style="background-color: white; border: 10px solid #dddddd; border-radius: 5px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+      <h2 style="text-align: center; color: #777777; font-family: 'Roboto', sans-serif;">You are now authorized. You can now close this page and use the SPBackup app</h2>
+    </div>
+  </body>
+</html>
+
+"""
 
 class RedirectListener(threading.Thread):
     def __init__(self, port, client_id, client_secret, mainthread_callback):
@@ -24,14 +37,13 @@ class RedirectListener(threading.Thread):
                 conn, addr = s.accept()
                 with conn:
                     data = conn.recv(1024).decode()
+                    self.send_response(conn, HTML)
                     # Parse the query string of the received data
                     query_string = parse_qs(data)
                     # Extract the code from the query string
                     string = query_string["GET /?code"][0]
                     first_space = string.index(" ")
                     code = string[:first_space]
-                    # Seems to be an issue with responding soon after. Set delay to get auth token
-                    time.sleep(2)
                     try:
                         token = exchange_code_for_token(code)
                         self.callback("token", token)
@@ -39,13 +51,14 @@ class RedirectListener(threading.Thread):
                         self.callback("http-error", err)
                     # Set the stop event
                     self.stop_event.set()
+    
+    def send_response(self, conn, html):
+        # Set the response to an HTML page that says "Thank you"
+        response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"
+        response += html #"<html><body>Thank you</body></html>"
+        conn.sendall(response.encode())
+
 
     def stop(self):
         """Stop the listener"""
         self.stop_event.set()
-
-# # Create an instance of the class
-# listener = RedirectListener(3000, "your-client-id", "your-client-secret")
-
-# # Start the listener
-# list
