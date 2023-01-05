@@ -56,6 +56,9 @@ def exchange_code_for_token(code: str) -> str:
 async def get_playlists(token: str) -> tuple:
   # Set the authorization header with the access token
   headers = create_auth_token_header(token)
+  headers = {
+        "Authorization": f"Bearer {token}"
+    }
 
   # Create an asyncio session to send the request
   async with aiohttp.ClientSession() as session:

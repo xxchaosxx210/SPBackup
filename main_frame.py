@@ -3,12 +3,12 @@ from spotify.listener import RedirectListener
 from spotify.net import authorize
 from spotify.net import get_playlists
 import spotify.const as const
-import app.utils as utils
 from auth_dialog import AuthDialog
 from playlists_ctrl import PlaylistsCtrl
 import asyncio
+import settings
 
-class MainWindow(wx.Frame):
+class MainFrame(wx.Frame):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
@@ -22,7 +22,7 @@ class MainWindow(wx.Frame):
 
         self.SetSizerAndFit(vbox)
         self.SetSize((640, 480))
-        self.token = utils.load()["token"]
+        self.token = settings.load()["token"]
         if not self.token:
             self.start_listening_for_redirect()
         else:
@@ -37,7 +37,7 @@ class MainWindow(wx.Frame):
             if response.status == 401:
                 print(f'Error retrieving get_playlists with Status code: {response.status} and Reason: {response.reason}')
                 print("...Removing token file")
-                utils.remove()
+                settings.remove()
                 print("Please restart the App again")
             else:
                 print(f'Error retrieving get_playlists with Status code: {response.status} and Reason: {response.reason}')
@@ -45,7 +45,7 @@ class MainWindow(wx.Frame):
     def on_listener_response(self, status: str, value: any):
         if status == "token":
             # save the token to file
-            utils.save(value)
+            settings.save(value)
             self.token = value
             wx.CallAfter(self.destroy_auth_dialog)
         elif status == "authorize":
@@ -91,13 +91,3 @@ class MainPanel(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
         self.SetSizer(vbox)
-
-
-def main():
-    app = wx.App()
-    frame = MainWindow(None, title="Spotify Backup - coded by Paul Millar")
-    frame.Show()
-    app.MainLoop()
-
-if __name__ == '__main__':
-    main()
