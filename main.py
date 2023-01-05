@@ -6,6 +6,7 @@ import spotify.const as const
 from spotify.serializers.playlist import Playlist
 import app.utils as utils
 from auth_dialog import AuthDialog
+from playlists_ctrl import PlaylistsCtrl
 import asyncio
 
 class MainWindow(wx.Frame):
@@ -16,9 +17,9 @@ class MainWindow(wx.Frame):
         self.main_panel = MainPanel(self)
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(self.main_panel, wx.ALL|wx.EXPAND, 0)
+        hbox.Add(self.main_panel, 1, wx.ALL|wx.EXPAND, 0)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(hbox, wx.ALL|wx.EXPAND, 0)
+        vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
 
         self.SetSizerAndFit(vbox)
         self.SetSize((640, 480))
@@ -31,9 +32,8 @@ class MainWindow(wx.Frame):
     async def retrieve_playlists(self):
         status, response = await get_playlists(self.token)
         if status == "ok":
-            for json_playlist in response:
-                playlist = Playlist(**json_playlist)
-                print(f'Name: {playlist.name}, ID: {playlist.id}')
+            # Our response willl be the playlists json array
+            wx.CallAfter(self.main_panel.playlists_ctrl.populate, playlists=response)
         else:
             if response.status == 401:
                 print(f'Error retrieving get_playlists with Status code: {response.status} and Reason: {response.reason}')
@@ -79,6 +79,14 @@ class MainWindow(wx.Frame):
 class MainPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
+
+        self.playlists_ctrl = PlaylistsCtrl(self)
+
+        hbox = wx.BoxSizer(wx.HORIZONTAL)
+        hbox.Add(self.playlists_ctrl, 1, wx.ALL|wx.EXPAND, 0)
+        vbox = wx.BoxSizer(wx.VERTICAL)
+        vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
+        self.SetSizer(vbox)
 
 
 def main():
