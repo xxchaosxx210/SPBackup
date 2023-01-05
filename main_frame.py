@@ -9,6 +9,8 @@ class MainFrame(wx.Frame):
 
         self.main_panel = MainPanel(self)
 
+        self.sbar = self.CreateStatusBar()
+
         hbox = wx.BoxSizer(wx.HORIZONTAL)
         hbox.Add(self.main_panel, 1, wx.ALL|wx.EXPAND, 0)
         vbox = wx.BoxSizer(wx.VERTICAL)

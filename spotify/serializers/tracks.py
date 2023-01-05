@@ -112,7 +112,7 @@ class Item(BaseModel):
     video_thumbnail: VideoThumbnail
 
 
-class Model(BaseModel):
+class Tracks(BaseModel):
     href: str
     items: List[Item]
     limit: int

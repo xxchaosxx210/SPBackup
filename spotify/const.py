@@ -22,6 +22,8 @@ URI_PLAYLISTS = "https://api.spotify.com/v1/me/playlists"
 URI_PLAYLIST = lambda playlist_id : f"https://api.spotify.com/v1/playlists/{playlist_id}"
 URI_PLAYLIST_TRACKS = lambda playlist_id : f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
 
+URI_USER = "https://api.spotify.com/v1/me"
+
 # Our encoded client_id and client_secret header. This will be changed on release to server side only
 AUTH_HEADER = base64.b64encode(
     f'{CLIENT_ID}:{CLIENT_SECRET}'.encode('utf-8'))
