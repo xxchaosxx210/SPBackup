@@ -14,7 +14,9 @@ from spotify.listener import PORT
 from spotify.net import authorize
 from spotify.net import get_playlists
 from spotify.net import get_user_info
+from spotify.net import get_playlist
 from spotify.net import SpotifyError
+from spotify.serializers.playlist_info import Playlist as PlaylistInfo
 import spotify.const as const
 
 import logging
@@ -53,6 +55,12 @@ class SPBackupApp(wx.App):
         try:
             response = await get_user_info(self.token)
             wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
+        except SpotifyError as err:
+            self.handle_spotify_error(error=err)
+    
+    async def retrieve_playlist(self, playlist_id: int):
+        try:
+            response: PlaylistInfo  = await get_playlist(self.token, playlist_id)
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
     

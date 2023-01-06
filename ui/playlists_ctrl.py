@@ -1,4 +1,5 @@
 import wx
+import asyncio
 import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlist import Playlist
 
@@ -55,7 +56,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
-        playlist_index = self.GetItemData(item_index)
         # Do something with the Playlist object
-        print("Selected item:", item_index)
-        print("Associated Playlist:", self._playlists[playlist_index])
+        app = wx.GetApp()
+        playlist: Playlist = self._playlists[item_index]
+        asyncio.run(app.retrieve_playlist(playlist.id))
