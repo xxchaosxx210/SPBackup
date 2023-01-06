@@ -14,7 +14,7 @@ class PlaylistSplitterWindow(wx.SplitterWindow):
 
         #self.Initialize(self.playlists_ctrl)
 
-        self.playlists_ctrl.SetMinSize((-1, 800))
+        self.playlists_ctrl.SetMinSize((-1, 300))
         self.tracklist_ctrl.SetMinSize((-1, 100))
 
         # width, height = self.GetParent().GetClientSize()

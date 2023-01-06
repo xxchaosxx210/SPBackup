@@ -10,9 +10,11 @@ from ui.dialogs.user import show_user_info_dialog
 import settings
 
 from spotify.listener import RedirectListener
+from spotify.listener import PORT
 from spotify.net import authorize
 from spotify.net import get_playlists
 from spotify.net import get_user_info
+from spotify.net import SpotifyError
 import spotify.const as const
 
 import logging
@@ -39,39 +41,31 @@ class SPBackupApp(wx.App):
             asyncio.run(self.retrieve_playlists())
     
     async def retrieve_playlists(self):
-        status, response = await get_playlists(self.token)
-        if status == "ok":
-            logger.info("Status returned OK")
-            # Our response willl be the playlists json array
-            wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate, playlists=response)
-            wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
-        else:
-            wx.CallAfter(self.handle_spotify_error, response=response, function_name="get_playlists")
+        try:
+            response = await get_playlists(self.token)
+        except SpotifyError as err:
+            self.handle_spotify_error(error=err)
+            return
+        wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate, playlists=response)
+        wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
     
     async def retrieve_user_info(self):
-        status, response = await get_user_info(self.token)
-        if status == "ok":
+        try:
+            response = await get_user_info(self.token)
             wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
-        else:
-            wx.CallAfter(self.handle_spotify_error, response=response, function_name="get_user_info")
+        except SpotifyError as err:
+            self.handle_spotify_error(error=err)
     
-    def handle_spotify_error(self, response, function_name):
-        if response.status == 401:
-            logger.error("Status returned 401")
-            wx.CallAfter(self.frame.sbar.SetStatusText, 
-            text=f'Error retrieving {function_name} with Status code: {response.status} and Reason: {response.reason}')
+    def handle_spotify_error(self, error: SpotifyError):
+        if error.code == 401:
+            wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)
             settings.remove()
             self.start_listening_for_redirect()
-        elif response.status == 403:
-            self.show_error("403 Error, You do not have access to this request. Please logout and login again through your Spotify.")
-            logger.error("Status returned 403")
+        elif error.code == 403:
+            self.show_error(error.response_text)
             settings.remove()
         else:
-            wx.CallAfter(
-                self.frame.sbar.SetStatusText, 
-                text=f'Error retrieving {function_name} with Status code: {response.status} and Reason: {response.reason}')
-            logger.error(f"Status returned {response.status}, {response.reason}")
-                
+            wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)                
     
     def on_listener_response(self, status: str, value: any):
         if status == "token":
@@ -82,16 +76,16 @@ class SPBackupApp(wx.App):
             wx.CallAfter(self.frame.sbar.SetStatusText, "Retrieving Playlists...")
             asyncio.run(self.retrieve_playlists())
         elif status == "authorize":
-            url = authorize((
+            loop = asyncio.new_event_loop()
+            url = loop.run_until_complete(authorize((
                 const.PLAYLIST_MODIFY_PUBLIC,
                 const.PLAYLIST_MODIFY_PRIVATE,
                 const.PLAYLIST_READ_COLLABORATIVE,
                 const.PLAYLIST_READ_PRIVATE
-            ))
+            )))
             wx.CallAfter(self.open_auth_dialog, url=url)
-        elif status == "http-error":
-            wx.CallAfter(self.frame.sbar.SetStatusText, 
-            f'Error with Authentication. code: {value.status_code} and reason: {value.response.reason}')
+        elif status == "spotify-error":
+            wx.CallAfter(self.frame.sbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
 
     def open_auth_dialog(self, url):
@@ -107,7 +101,7 @@ class SPBackupApp(wx.App):
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(
-                3000, 
+                PORT, 
                 const.CLIENT_ID, 
                 const.CLIENT_SECRET,
                 self.on_listener_response)
