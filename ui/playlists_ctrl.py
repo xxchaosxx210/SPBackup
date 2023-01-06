@@ -1,11 +1,9 @@
 import wx
-import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlist import Playlist
 
-class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
+class PlaylistsCtrl(wx.ListCtrl):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
-        listmix.ListCtrlAutoWidthMixin.__init__(self)
 
         self.InsertColumn(0, "Name")
         self.InsertColumn(1, "Description")
@@ -36,9 +34,6 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
         # Add the playlists to the list control
         for playlist in playlists:
-            # self.Append((
-            #   plst.name  , plst.description, plst.owner.display_name, plst.id, str(plst.tracks.total)
-            # ))
             self.add_playlist(Playlist(**playlist))
     
     def clear_playlists(self):
@@ -55,16 +50,9 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.SetItem(index, 3, str(playlist.id))
         self.SetItem(index, 4, str(playlist.tracks.total))
 
-        # Associate the Playlist object with the row
-        # self.SetItemData(index, index)
-
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
         playlist_index = self.GetItemData(item_index)
-
-        # Get the Playlist object from the list
-        # playlist = self.playlists[playlist_index]
-
         # Do something with the Playlist object
         print("Selected item:", item_index)
         print("Associated Playlist:", self._playlists[playlist_index])

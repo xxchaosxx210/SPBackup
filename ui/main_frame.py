@@ -1,6 +1,6 @@
 import wx
 import asyncio
-from playlists_ctrl import PlaylistsCtrl
+from ui.playlists_ctrl import PlaylistsCtrl
 
 class MainFrame(wx.Frame):
 

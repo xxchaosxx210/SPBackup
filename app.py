@@ -3,9 +3,9 @@ import asyncio
 import os
 import multiprocessing
 
-from main_frame import MainFrame
-from auth_dialog import AuthDialog
-from user_detail_dlg import show_user_info_dialog
+from ui.main_frame import MainFrame
+from ui.dialogs.auth import AuthDialog
+from ui.dialogs.user import show_user_info_dialog
 
 import settings
 

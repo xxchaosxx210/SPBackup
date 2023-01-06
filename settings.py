@@ -1,7 +1,7 @@
 import json
 import os
 
-TOKEN_FILENAME = "token.json"
+TOKEN_FILENAME = ".token.json"
 
 def save(token):
     with open(TOKEN_FILENAME, "w") as fp:
