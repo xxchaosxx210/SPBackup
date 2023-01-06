@@ -1,8 +1,11 @@
 import wx
 import asyncio
+import os
+import multiprocessing
 
 from main_frame import MainFrame
 from auth_dialog import AuthDialog
+from user_detail_dlg import show_user_info_dialog
 
 import settings
 
@@ -14,7 +17,7 @@ import spotify.const as const
 
 import logging
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger()
 
 class SPBackupApp(wx.App):
@@ -22,6 +25,9 @@ class SPBackupApp(wx.App):
     def __init__(self, redirect=False, filename=None, useBestVisual=False, clearSigInt=True):
         super().__init__(redirect, filename, useBestVisual, clearSigInt)
         self.frame = None
+    
+    def OnInit(self):
+        return super().OnInit()
 
     def run_background_auth_check(self):
         self.token = settings.load()["token"]
@@ -31,8 +37,6 @@ class SPBackupApp(wx.App):
         else:
             logger.info("Token found. Retrieving Playlists from User...")
             asyncio.run(self.retrieve_playlists())
-            logger.info("Retrieving User Information...")
-            asyncio.run(self.retrieve_user_info())
     
     async def retrieve_playlists(self):
         status, response = await get_playlists(self.token)
@@ -47,7 +51,7 @@ class SPBackupApp(wx.App):
     async def retrieve_user_info(self):
         status, response = await get_user_info(self.token)
         if status == "ok":
-            wx.CallAfter(self.frame.sbar.SetStatusText, text=f"Welcome back, {response.display_name}")
+            wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
         else:
             wx.CallAfter(self.handle_spotify_error, response=response, function_name="get_user_info")
     
@@ -119,8 +123,9 @@ class SPBackupApp(wx.App):
 
 
 def run_app():
+    multiprocessing.freeze_support()
     spbackup_app = SPBackupApp()
-    frame = MainFrame(None, title="Spotify Backup - coded by Paul Millar")
+    frame = MainFrame(app=spbackup_app, parent=None, title="Spotify Backup - coded by Paul Millar")
     frame.Show()
     spbackup_app.frame = frame
     spbackup_app.run_background_auth_check()

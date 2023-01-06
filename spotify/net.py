@@ -124,5 +124,5 @@ def get_playlist_items(token, playlist_id):
 
   # Extract the JSON response
   data = response.json()
-  model = TracksModel.from_orm(data)
+  model = Tracks.from_orm(data)
   return model

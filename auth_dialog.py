@@ -23,6 +23,8 @@ class AuthDialog(wx.Dialog):
         # Set the dialog's sizer
         self.SetSizer(sizer)
 
+        self.SetWindowStyle(self.GetWindowStyle() & ~wx.CLOSE_BOX)
+
     def on_button(self, event):
         # Open the web browser
         wx.LaunchDefaultBrowser(self.auth_url)
