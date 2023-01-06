@@ -1,6 +1,6 @@
 import wx
 import asyncio
-from ui.playlists_ctrl import PlaylistsCtrl
+from ui.playlist_splitterwindow import PlaylistSplitterWindow
 
 class MainFrame(wx.Frame):
 
@@ -21,7 +21,7 @@ class MainFrame(wx.Frame):
         vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
 
         self.SetSizerAndFit(vbox)
-        self.SetSize((800, 600))
+        self.SetSize((800, 800))
 
 
     def create_menubar(self):
@@ -64,10 +64,8 @@ class MainPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.playlists_ctrl = PlaylistsCtrl(self)
+        self.playlists_spw = PlaylistSplitterWindow(self)
 
-        hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(self.playlists_ctrl, 1, wx.ALL|wx.EXPAND, 0)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
+        vbox.Add(self.playlists_spw, 1, wx.EXPAND, 0)
         self.SetSizer(vbox)

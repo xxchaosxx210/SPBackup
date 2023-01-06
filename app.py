@@ -43,7 +43,7 @@ class SPBackupApp(wx.App):
         if status == "ok":
             logger.info("Status returned OK")
             # Our response willl be the playlists json array
-            wx.CallAfter(self.frame.main_panel.playlists_ctrl.populate, playlists=response)
+            wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate, playlists=response)
             wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
         else:
             wx.CallAfter(self.handle_spotify_error, response=response, function_name="get_playlists")
