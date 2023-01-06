@@ -3,6 +3,7 @@ import socket
 from urllib.parse import parse_qs
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
+from spotify.net import await_on_sync_call
 import asyncio
 
 PORT = 3000
@@ -78,8 +79,9 @@ class RedirectListener(threading.Thread):
                     code = string[:first_space]
                     try:
                         # token = exchange_code_for_token(code)
-                        loop = asyncio.new_event_loop()
-                        token = loop.run_until_complete(exchange_code_for_token(code))
+                        # loop = asyncio.new_event_loop()
+                        # token = loop.run_until_complete(exchange_code_for_token(code))
+                        token = await_on_sync_call(exchange_code_for_token, code=code)
                         self.callback("token", token)
                     except SpotifyError as err:
                         self.callback("spotify-error", err)

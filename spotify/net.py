@@ -1,5 +1,6 @@
 import aiohttp
 import logging
+import asyncio
 import spotify.const as const
 from spotify.serializers.tracks import Tracks
 from spotify.serializers.user import User
@@ -22,7 +23,41 @@ def create_auth_header():
 def create_auth_token_header(token) -> dict:
     return {"Authorization": f"Bearer {token}"}
 
+def await_on_sync_call(func_to_wait_on, **kwargs) -> any:
+    """for synchronous calls to the spotify api
+
+    Args:
+        func_to_wait_on (_type_): Python function
+        **kwargs: keyword arguments to be passed into the func_to_wait_on
+
+    Returns:
+        any: whatever return object is returned form the func_to_wait_on function
+    """
+    loop = asyncio.get_event_loop()
+    if not loop:
+        # create a new event loop
+        loop = asyncio.new_event_loop()
+    value = None
+    try:
+        with loop:
+            value = loop.run_until_complete(func_to_wait_on(**kwargs))
+    except asyncio.CancelledError as err:
+        logger.warning(f"Cancelled Error: {err.__str__()}")
+    finally:
+        return value
+
 def raise_spotify_exception(response: aiohttp.ClientResponse):
+    """checks the response.status and raises a SpotifyError
+
+    Args:
+        response (aiohttp.ClientResponse): the server response from the Spotify API
+
+    Raises:
+        SpotifyError: _description_
+        SpotifyError: _description_
+        SpotifyError: _description_
+        SpotifyError: _description_
+    """
     if response.status == 401:
         raise SpotifyError(response.status, "Bad or Expired Token. Please re-authenticate")
     elif response.status == 403:
