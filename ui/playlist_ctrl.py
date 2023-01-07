@@ -4,9 +4,12 @@ from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Artist
 from spotify.serializers.playlist_info import Item
 
+from globals.state import State
+import globals.logger as logger
+
 
 class PlaylistInfoToolBar(wx.Panel):
-    
+
     def __init__(self, parent):
         super().__init__(parent)
 
@@ -36,11 +39,15 @@ class PlaylistInfoToolBar(wx.Panel):
 
     def on_prev(self, event):
         # Handle the "prev" button press here
-        pass
+        playlist = State.get_playlist()
+        if playlist:
+            logger.console(f'Previous page link is: {playlist.tracks.next}')
 
     def on_next(self, event):
         # Handle the "next" button press here
-        pass
+        playlist = State.get_playlist()
+        if playlist:
+            logger.console(f'Next page link is: {playlist.tracks.next}')
 
 
 class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
@@ -65,21 +72,19 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.SetColumnWidth(3, 200)
         self.SetColumnWidth(4, 100)
 
-        self._playlist = None
-
         self.SetMinSize((100, 200))
         self.setResizeColumn(2)
         self.SetAutoLayout(True)
     
     def populate(self, playlist: PlaylistInfo):
         self.clear_items()
-        self._playlist = playlist
-        for item_index, item in enumerate(self._playlist.tracks.items):
+        State.set_playlist(playlist)
+        for item_index, item in enumerate(playlist.tracks.items):
             self.add_item(item_index, item)
 
     def clear_items(self):
         self.DeleteAllItems()
-        self._playlist = None
+        State.set_playlist(None)
     
     def add_item(self, item_index: int, item: Item):
         row_index = self.InsertItem(index=item_index, label=str(item_index+1))

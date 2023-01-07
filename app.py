@@ -21,6 +21,7 @@ import spotify.const as const
 
 from spotify.debug import debug as spotify_debug
 import globals.logger as logger
+from globals.state import State
 
 
 class SPBackupApp(wx.App):
@@ -35,8 +36,9 @@ class SPBackupApp(wx.App):
         return super().OnInit()
 
     def run_background_auth_check(self):
-        self.token = config.load()["token"]
-        if not self.token:
+        token = config.load()["token"]
+        State.set_token(token)
+        if not token:
             logger.console("No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
         else:
@@ -45,7 +47,7 @@ class SPBackupApp(wx.App):
     
     async def retrieve_playlists(self):
         try:
-            response = await get_playlists(self.token)
+            response = await get_playlists(State.get_token())
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
             return
@@ -54,14 +56,14 @@ class SPBackupApp(wx.App):
     
     async def retrieve_user_info(self):
         try:
-            response = await get_user_info(self.token)
+            response = await get_user_info(State.get_token())
             wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
     
     async def retrieve_playlist(self, playlist_id: int):
         try:
-            playlist: PlaylistInfo  = await get_playlist(self.token, playlist_id)
+            playlist: PlaylistInfo  = await get_playlist(State.get_token(), playlist_id)
             wx.CallAfter(
                 self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate, playlist=playlist
             )
@@ -96,7 +98,7 @@ class SPBackupApp(wx.App):
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
             config.save(value)
-            self.token = value
+            State.set_token(value)
             logger.console("Response from RedirectListener: Token recieved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(self.frame.sbar.SetStatusText, "Retrieving Playlists...")
@@ -157,7 +159,6 @@ class SPBackupApp(wx.App):
         dlg.ShowModal()
         # Destroy the dialog
         dlg.Destroy()
-
 
 
 def add_args() -> argparse.Namespace:
