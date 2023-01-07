@@ -7,7 +7,7 @@ from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
 from ui.dialogs.user import show_user_info_dialog
 
-import settings
+import globals.config as config
 
 from spotify.listener import RedirectListener
 from spotify.listener import PORT
@@ -19,9 +19,8 @@ from spotify.net import SpotifyError
 from spotify.serializers.playlist_info import PlaylistInfo
 import spotify.const as const
 
-
 from spotify.debug import debug as spotify_debug
-import utils.logger as logger
+import globals.logger as logger
 
 
 class SPBackupApp(wx.App):
@@ -36,7 +35,7 @@ class SPBackupApp(wx.App):
         return super().OnInit()
 
     def run_background_auth_check(self):
-        self.token = settings.load()["token"]
+        self.token = config.load()["token"]
         if not self.token:
             logger.console("No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
@@ -78,11 +77,11 @@ class SPBackupApp(wx.App):
         if error.code == const.STATUS_BAD_TOKEN:
             # bad token ask for a re-authorize request from the user
             wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)
-            settings.remove()
+            config.remove()
             self.start_listening_for_redirect()
         elif error.code == const.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
-            settings.remove()
+            config.remove()
         else:
             wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)                
     
@@ -96,7 +95,7 @@ class SPBackupApp(wx.App):
         if status == RedirectListener.EVENT_TOKEN_RECIEVED:
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
-            settings.save(value)
+            config.save(value)
             self.token = value
             logger.console("Response from RedirectListener: Token recieved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
