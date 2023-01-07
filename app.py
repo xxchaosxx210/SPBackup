@@ -2,6 +2,8 @@ import wx
 import asyncio
 import os
 import multiprocessing
+import logging
+import argparse
 
 from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
@@ -19,10 +21,12 @@ from spotify.net import SpotifyError
 from spotify.serializers.playlist_info import Playlist as PlaylistInfo
 import spotify.const as const
 
-import logging
 
 logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 logger = logging.getLogger()
+
+from spotify.debug import debug
+
 
 class SPBackupApp(wx.App):
 
@@ -107,7 +111,7 @@ class SPBackupApp(wx.App):
         self.auth_dialog.Destroy()
     
     def start_listening_for_redirect(self):
-        """listen on the authorization redirect on port 3000
+        """listen on the authorization redirect on port spotify.const.PORT
         should return a token
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
@@ -119,6 +123,11 @@ class SPBackupApp(wx.App):
             self.listener.start()
     
     def show_error(self, message: str):
+        """shows a standard error box
+
+        Args:
+            message (str): anything you like
+        """
         # Create the message dialog
         dlg = wx.MessageDialog(self.frame, message, "Error", wx.OK | wx.ICON_ERROR)
         # Show the dialog and wait for the user to click "OK"
@@ -127,7 +136,23 @@ class SPBackupApp(wx.App):
         dlg.Destroy()
 
 
+
+def add_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-d", 
+        "--debug", 
+        action="store_true", 
+        default=False,
+        help="enable debug mode")
+    return parser.parse_args()
+
 def run_app():
+
+    debug.DEBUG = add_args()
+    if debug.DEBUG:
+        debug.initialize_paths()
+
     multiprocessing.freeze_support()
     spbackup_app = SPBackupApp()
     frame = MainFrame(app=spbackup_app, parent=None, title="Spotify Backup - coded by Paul Millar")
