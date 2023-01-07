@@ -114,7 +114,7 @@ async def exchange_code_for_token(code: str) -> str:
                 return json_response["access_token"]
             raise_spotify_exception(response)
 
-async def get_playlists(token: str, url: str = "", offset: int = 0, limit: int = 2) -> dict:
+async def get_playlists(token: str, url: str = "", offset: int = 0, limit: int = 50) -> dict:
     headers = create_auth_token_header(token)
     params = {}
     if not url:
