@@ -20,7 +20,7 @@ from spotify.serializers.playlist_info import PlaylistInfo
 import spotify.const as const
 
 
-from spotify.debug import spotify_debug
+from spotify.debug import debug as spotify_debug
 import utils.logger as logger
 
 

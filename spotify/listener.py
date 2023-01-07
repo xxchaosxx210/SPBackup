@@ -4,9 +4,9 @@ from urllib.parse import parse_qs
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
 from spotify.net import await_on_sync_call
-import asyncio
 
 PORT = 3000
+HOST = "localhost"
 
 HTML = """
 <html>
@@ -64,7 +64,7 @@ class RedirectListener(threading.Thread):
         """Listen for a redirect on the specified port"""
         self.callback("authorize", None)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind(("localhost", self.port))
+            s.bind((HOST, self.port))
             s.listen()
             while not self.stop_event.is_set():
                 conn, addr = s.accept()
