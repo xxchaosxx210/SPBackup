@@ -113,15 +113,21 @@ async def exchange_code_for_token(code: str) -> str:
                 return json_response["access_token"]
             raise_spotify_exception(response)
 
-async def get_playlists(token: str) -> tuple:
+async def get_playlists(token: str, offset: int = 0, limit: int = 2) -> dict:
   # Set the authorization header with the access token
 #   headers = create_auth_token_header(token)
   headers = create_auth_token_header(token)
 
+  params = {
+    "offset": offset,
+    "limit": limit
+  }
+
   # Create an asyncio session to send the request
   async with aiohttp.ClientSession() as session:
     # Send a GET request to the playlist endpoint using the session
-    async with session.get(const.URI_PLAYLISTS, headers=headers) as response:
+    async with session.get(
+        const.URI_PLAYLISTS, headers=headers, params=params) as response:
       # If the request was successful, return the list of playlists
       if response.status == const.STATUS_OK:
         json_response = await response.json()
