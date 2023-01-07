@@ -1,9 +1,10 @@
 import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
-from spotify.serializers.playlist import Playlist
+from spotify.serializers.playlists import Item as PlaylistsItem
 from globals.state import State
 import globals.logger as logger
+
 
 class PlaylistsToolBar(wx.Panel):
 
@@ -20,37 +21,44 @@ class PlaylistsToolBar(wx.Panel):
         v_box.Add(h_box, 1, wx.EXPAND)
 
         # Create the "prev" button and bind the event handler
-        prev_btn = wx.Button(self, label="prev")
-        self.Bind(wx.EVT_BUTTON, self.on_prev, prev_btn)
+        self.prev_btn = wx.Button(self, label="prev")
+        self.prev_btn.Disable()  # disable the button
+        self.Bind(wx.EVT_BUTTON, self.on_prev, self.prev_btn)
         # Add the button to the horizontal box sizer
-        h_box.Add(prev_btn, 0, wx.ALL, 5)
+        h_box.Add(self.prev_btn, 0, wx.ALL, 5)
 
         # Create the "next" button and bind the event handler
-        next_btn = wx.Button(self, label="next")
-        self.Bind(wx.EVT_BUTTON, self.on_next, next_btn)
+        self.next_btn = wx.Button(self, label="next")
+        self.next_btn.Disable()  # disable the button
+        self.Bind(wx.EVT_BUTTON, self.on_next, self.next_btn)
         # Add the button to the horizontal box sizer
-        h_box.Add(next_btn, 0, wx.ALL, 5)
+        h_box.Add(self.next_btn, 0, wx.ALL, 5)
 
         # Set the sizer for the panel
         self.SetSizer(v_box)
 
+    def change_nav_button_state(self):
+        playlists = State.get_playlists()
+        self.next_btn.Disable() if not playlists.next else self.next_btn.Enable(True)
+        self.prev_btn.Disable() if not playlists.previous else self.prev_btn.Enable(True)
+
     def on_prev(self, event):
         # Handle the "prev" button press here
-        playlist = State.get_playlist()
-        if playlist:
-            if playlist.tracks.previous is not None:
-                app = wx.GetApp()
-                asyncio.run(app.retrieve_tracks(playlist.tracks.previous))
-            logger.console(f'Previous page link is: {playlist.tracks.next}')
+        playlists = State.get_playlists()
+        if not playlists or not playlists.previous:
+            return
+        app = wx.GetApp()
+        asyncio.run(app.retrieve_playlist_items(playlists.previous))
+        # logger.console(f'Previous page link is: {playlists.previous}')
 
     def on_next(self, event):
         # Handle the "next" button press here
-        playlist = State.get_playlist()
-        if playlist:
-            if playlist.tracks.next is not None:
-                app = wx.GetApp()
-                asyncio.run(app.retrieve_tracks(playlist.tracks.next))
-            logger.console(f'Next page link is: {playlist.tracks.next}')
+        playlists = State.get_playlists()
+        if not playlists or not playlists.next:
+            return
+        app = wx.GetApp()
+        asyncio.run(app.retrieve_playlist_items(playlists.next))
+        # logger.console(f'Next page link is: {playlists.next}')
 
 
 class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
@@ -63,9 +71,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.InsertColumn(2, "Created by")
         self.InsertColumn(3, "ID")
         self.InsertColumn(4, "Tracks amount")
-
-        self._playlists = []
-
+        
         # Set the minimum size of the widget
         self.SetMinSize((100, 200))
 
@@ -81,22 +87,19 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
 
-    def populate(self, playlists):
+    def populate(self):
         # Clear the list control
         self.clear_playlists()
-
         # Add the playlists to the list control
-        for playlist in playlists:
-            self.add_playlist(Playlist(**playlist))
+        playlists = State.get_playlists()
+        self.GetParent().GetParent().playlists_toolbar.change_nav_button_state()
+        for index, playlist in enumerate(playlists.items):
+            self.add_playlist(index, playlist)
     
     def clear_playlists(self):
         self.DeleteAllItems()
-        self._playlists = []
     
-    def add_playlist(self, playlist: Playlist):
-        index = len(self._playlists)  # Get the next available index ID
-        self._playlists.append(playlist)  # Add the Playlist object to the list
-
+    def add_playlist(self, index, playlist: PlaylistsItem):
         self.InsertItem(index, playlist.name, index)
         self.SetItem(index, 1, playlist.description)
         self.SetItem(index, 2, playlist.owner.display_name)
@@ -107,5 +110,5 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         item_index = event.GetIndex()
         # Do something with the Playlist object
         app = wx.GetApp()
-        playlist: Playlist = self._playlists[item_index]
+        playlist: PlaylistsItem = State.get_playlists().items[item_index]
         asyncio.run(app.retrieve_playlist(playlist.id))

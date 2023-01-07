@@ -50,7 +50,7 @@ class Playlists(BaseModel):
     href: str
     items: List[Item] = []
     limit: int
-    next: str
+    next: str = None
     offset: int
-    previous: Any
+    previous: str = None
     total: int = 0

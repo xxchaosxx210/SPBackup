@@ -44,7 +44,7 @@ class PlaylistInfoToolBar(wx.Panel):
             if playlist.tracks.previous is not None:
                 app = wx.GetApp()
                 asyncio.run(app.retrieve_tracks(playlist.tracks.previous))
-            logger.console(f'Previous page link is: {playlist.tracks.next}')
+            # logger.console(f'Previous page link is: {playlist.tracks.next}')
 
     def on_next(self, event):
         # Handle the "next" button press here
@@ -53,7 +53,7 @@ class PlaylistInfoToolBar(wx.Panel):
             if playlist.tracks.next is not None:
                 app = wx.GetApp()
                 asyncio.run(app.retrieve_tracks(playlist.tracks.next))
-            logger.console(f'Next page link is: {playlist.tracks.next}')
+            # logger.console(f'Next page link is: {playlist.tracks.next}')
 
 
 class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):

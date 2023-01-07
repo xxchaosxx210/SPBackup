@@ -1,13 +1,24 @@
 import threading
 from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Tracks
-
+from spotify.serializers.playlists import Playlists
 
 class State:
 
     _token: str = None
     _playlist: PlaylistInfo = None 
     _lock = threading.Lock()
+    _playlists: Playlists = None
+
+    @staticmethod
+    def set_playlists(playlists: Playlists):
+        with State._lock:
+            State._playlists = playlists
+
+    @staticmethod
+    def get_playlists() -> Playlists:
+        with State._lock:
+            return State._playlists
 
     @staticmethod
     def set_playlist(playlist: PlaylistInfo):

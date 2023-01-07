@@ -6,6 +6,7 @@ from spotify.serializers.tracks import Tracks
 from spotify.serializers.user import User
 from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Tracks
+from spotify.serializers.playlists import Playlists
 
 from spotify.debug import debug
 
@@ -113,27 +114,19 @@ async def exchange_code_for_token(code: str) -> str:
                 return json_response["access_token"]
             raise_spotify_exception(response)
 
-async def get_playlists(token: str, offset: int = 0, limit: int = 2) -> dict:
-  # Set the authorization header with the access token
-#   headers = create_auth_token_header(token)
-  headers = create_auth_token_header(token)
-
-  params = {
-    "offset": offset,
-    "limit": limit
-  }
-
-  # Create an asyncio session to send the request
-  async with aiohttp.ClientSession() as session:
-    # Send a GET request to the playlist endpoint using the session
-    async with session.get(
-        const.URI_PLAYLISTS, headers=headers, params=params) as response:
-      # If the request was successful, return the list of playlists
-      if response.status == const.STATUS_OK:
-        json_response = await response.json()
-        return json_response["items"]
-      # If the request was not successful, raise an exception
-      raise_spotify_exception(response)
+async def get_playlists(token: str, url: str = "", offset: int = 0, limit: int = 2) -> dict:
+    headers = create_auth_token_header(token)
+    params = {}
+    if not url:
+        url = const.URI_PLAYLISTS
+        params = {"offset": offset, "limit": limit}
+    
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers, params=params) as response:
+            if response.status == const.STATUS_OK:
+                json_response = await response.json()
+                return Playlists(**json_response)
+            raise_spotify_exception(response)
 
 async def get_user_info(token: str) -> User:
     # Set the authorization header

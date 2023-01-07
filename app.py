@@ -48,11 +48,12 @@ class SPBackupApp(wx.App):
     
     async def retrieve_playlists(self):
         try:
-            response = await get_playlists(State.get_token())
+            playlists = await get_playlists(State.get_token())
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
             return
-        wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate, playlists=response)
+        State.set_playlists(playlists)
+        wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate)
         wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
     
     async def retrieve_user_info(self):
@@ -79,6 +80,14 @@ class SPBackupApp(wx.App):
             wx.CallAfter(self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate)
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
+
+    async def retrieve_playlist_items(self, url: str):
+        try:
+            playlists = await get_playlists(token=State.get_token(), url=url)
+        except SpotifyError as err:
+            self.handle_spotify_error(error=err)
+        State.set_playlists(playlists)
+        wx.CallAfter(self.frame.main_panel.playlists_spw.playlists_ctrl.populate)
     
     def handle_spotify_error(self, error: SpotifyError):
         """handle the error status codes recieved from Spotify
