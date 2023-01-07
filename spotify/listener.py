@@ -4,6 +4,7 @@ from urllib.parse import parse_qs
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
 from spotify.net import await_on_sync_call
+from spotify.debug import debug
 
 PORT = 3000
 HOST = "localhost"
@@ -51,7 +52,14 @@ HTML = """
 
 """
 
+
 class RedirectListener(threading.Thread):
+
+    EVENT_SOCKET_ERROR = 0
+    EVENT_TOKEN_RECIEVED = 1
+    EVENT_REQUESTING_AUTHORIZATION = 2
+    EVENT_SPOTIFY_ERROR = 3
+
     def __init__(self, port, client_id, client_secret, mainthread_callback):
         super().__init__()
         self.port = port
@@ -62,31 +70,32 @@ class RedirectListener(threading.Thread):
 
     def run(self):
         """Listen for a redirect on the specified port"""
-        self.callback("authorize", None)
+        self.callback(RedirectListener.EVENT_REQUESTING_AUTHORIZATION, None)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, self.port))
             s.listen()
             while not self.stop_event.is_set():
-                conn, addr = s.accept()
-                with conn:
-                    data = conn.recv(1024).decode()
-                    self.send_response(conn, HTML)
-                    # Parse the query string of the received data
-                    query_string = parse_qs(data)
-                    # Extract the code from the query string
-                    string = query_string["GET /?code"][0]
-                    first_space = string.index(" ")
-                    code = string[:first_space]
-                    try:
-                        # token = exchange_code_for_token(code)
-                        # loop = asyncio.new_event_loop()
-                        # token = loop.run_until_complete(exchange_code_for_token(code))
-                        token = await_on_sync_call(exchange_code_for_token, code=code)
-                        self.callback("token", token)
-                    except SpotifyError as err:
-                        self.callback("spotify-error", err)
-                    # Set the stop event
-                    self.stop_event.set()
+                try:
+                    conn, addr = s.accept()
+                    with conn:
+                        data = conn.recv(1024).decode()
+                        self.send_response(conn, HTML)
+                        # Parse the query string of the received data
+                        query_string = parse_qs(data)
+                        # Extract the code from the query string
+                        string = query_string["GET /?code"][0]
+                        first_space = string.index(" ")
+                        code = string[:first_space]
+                        try:
+                            token = await_on_sync_call(exchange_code_for_token, code=code)
+                            self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
+                        except SpotifyError as err:
+                            self.callback(RedirectListener.EVENT_SPOTIFY_ERROR, err)
+                        # Set the stop event
+                        self.stop_event.set()
+                except socket.error as err:
+                    debug.file_log(f"Error in RedirectListener reading from socket. {err.__str__()}", "error")
+                    self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
     
     def send_response(self, conn, html):
         # Set the response to an HTML page that says "Thank you"
