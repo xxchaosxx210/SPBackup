@@ -12,7 +12,8 @@ from spotify.debug import debug as sp_debug
 
 class SpotifyError(Exception):
 
-    def __init__(self, code: int, text: str):
+    def __init__(self, code: int, text: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.response_text = text
         self.code = code
 
@@ -176,6 +177,8 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
+    # the fields what we want returned you add more later check the spotify.serializers.playlist_info file for the classnames and properties returned
+    # dont forget to update that file if you add or remove any more to the fields
     query_params = {
         "fields": "id,name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
     }
