@@ -190,8 +190,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         ) as response:
             if response.status == 200:
                 json_response = await response.json()
-                if sp_debug.DEBUG:
-                    sp_debug.save(".get_playlist_output.json", json_response)
+                # sp_debug.save(".get_playlist_output.json", json_response)
                 plylist = PlaylistInfo(**json_response)
                 return plylist
             raise_spotify_exception(response)

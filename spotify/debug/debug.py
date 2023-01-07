@@ -22,6 +22,8 @@ def initialize_paths():
         return
 
 def save(filename: str, data: object) -> bool:
+    if not DEBUG:
+        return False
     result = True
     try:
         pathname = os.path.join(DATA_PATH, filename)
