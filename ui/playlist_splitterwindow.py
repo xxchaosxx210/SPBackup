@@ -1,5 +1,6 @@
 import wx
 from ui.playlists_ctrl import PlaylistsCtrl
+from ui.playlist_ctrl import TrackListCtrl
 
 class PlaylistSplitterWindow(wx.SplitterWindow):
 
@@ -7,15 +8,14 @@ class PlaylistSplitterWindow(wx.SplitterWindow):
         super().__init__(*args, **kw, style=wx.SP_LIVE_UPDATE)
 
         self.playlists_ctrl = PlaylistsCtrl(self)
-        self.tracklist_ctrl = wx.Panel(self)
-        self.tracklist_ctrl.SetBackgroundColour("#000000")
+        self.playlistinfo_ctrl = TrackListCtrl(self)
 
-        self.SplitHorizontally(self.playlists_ctrl, self.tracklist_ctrl)
+        self.SplitHorizontally(self.playlists_ctrl, self.playlistinfo_ctrl)
 
         #self.Initialize(self.playlists_ctrl)
 
         self.playlists_ctrl.SetMinSize((-1, 300))
-        self.tracklist_ctrl.SetMinSize((-1, 100))
+        self.playlistinfo_ctrl.SetMinSize((-1, 100))
 
         # width, height = self.GetParent().GetClientSize()
         # app = wx.GetApp()

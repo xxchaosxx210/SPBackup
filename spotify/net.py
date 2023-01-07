@@ -175,10 +175,14 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         "Authorization": f"Bearer {access_token}",
         "Content-Type": "application/json",
     }
+    query_params = {
+        "fields": "name,tracks(items(added_at,track(album,artists,href,uri,name)))",
+    }
     async with aiohttp.ClientSession() as session:
         async with session.get(
             const.URI_PLAYLIST(playlist_id),
             headers=headers,
+            params=query_params
         ) as response:
             if response.status == 200:
                 json_response = await response.json()

@@ -60,7 +60,10 @@ class SPBackupApp(wx.App):
     
     async def retrieve_playlist(self, playlist_id: int):
         try:
-            response: PlaylistInfo  = await get_playlist(self.token, playlist_id)
+            playlist: PlaylistInfo  = await get_playlist(self.token, playlist_id)
+            wx.CallAfter(
+                self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate, playlist=playlist
+            )
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
     
