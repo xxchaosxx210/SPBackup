@@ -1,8 +1,6 @@
 import wx
 import asyncio
-import os
 import multiprocessing
-import logging
 import argparse
 
 from ui.main_frame import MainFrame
@@ -22,13 +20,13 @@ from spotify.serializers.playlist_info import PlaylistInfo
 import spotify.const as const
 
 
-logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
-logger = logging.getLogger()
-
-from spotify.debug import debug
+from spotify.debug import spotify_debug
+import utils.logger as logger
 
 
 class SPBackupApp(wx.App):
+
+    NAME = "SPBackup"
 
     def __init__(self, redirect=False, filename=None, useBestVisual=False, clearSigInt=True):
         super().__init__(redirect, filename, useBestVisual, clearSigInt)
@@ -40,10 +38,10 @@ class SPBackupApp(wx.App):
     def run_background_auth_check(self):
         self.token = settings.load()["token"]
         if not self.token:
-            logger.info("No Token found. Requesting Authorization...")
+            logger.console("No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
         else:
-            logger.info("Token found. Retrieving Playlists from User...")
+            logger.console("Token found. Retrieving Playlists from User...", "info")
             asyncio.run(self.retrieve_playlists())
     
     async def retrieve_playlists(self):
@@ -149,9 +147,16 @@ def add_args() -> argparse.Namespace:
 
 def run_app():
 
-    debug.DEBUG = add_args()
-    if debug.DEBUG:
-        debug.initialize_paths()
+    # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+
+    spotify_debug.DEBUG = add_args()
+    if spotify_debug.DEBUG:
+        # setup our spotify debugging if arguments are set to true
+        spotify_debug.initialize()
+
+    # create our logger APP
+    logger.setup_logger()
+    logger.console("This is a test", "info")
 
     multiprocessing.freeze_support()
     spbackup_app = SPBackupApp()
