@@ -1,6 +1,6 @@
 import wx
+import asyncio
 import wx.lib.mixins.listctrl as listmix
-from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Artist
 from spotify.serializers.playlist_info import Item
 
@@ -41,12 +41,18 @@ class PlaylistInfoToolBar(wx.Panel):
         # Handle the "prev" button press here
         playlist = State.get_playlist()
         if playlist:
+            if playlist.tracks.previous is not None:
+                app = wx.GetApp()
+                asyncio.run(app.retrieve_tracks(playlist.tracks.previous))
             logger.console(f'Previous page link is: {playlist.tracks.next}')
 
     def on_next(self, event):
         # Handle the "next" button press here
         playlist = State.get_playlist()
         if playlist:
+            if playlist.tracks.next is not None:
+                app = wx.GetApp()
+                asyncio.run(app.retrieve_tracks(playlist.tracks.next))
             logger.console(f'Next page link is: {playlist.tracks.next}')
 
 
@@ -76,18 +82,18 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.setResizeColumn(2)
         self.SetAutoLayout(True)
     
-    def populate(self, playlist: PlaylistInfo):
+    def populate(self):
+        playlist = State.get_playlist()
         self.clear_items()
-        State.set_playlist(playlist)
         for item_index, item in enumerate(playlist.tracks.items):
             self.add_item(item_index, item)
 
     def clear_items(self):
         self.DeleteAllItems()
-        State.set_playlist(None)
     
     def add_item(self, item_index: int, item: Item):
-        row_index = self.InsertItem(index=item_index, label=str(item_index+1))
+        offset_index = State.get_playlist().tracks.offset + item_index + 1
+        row_index = self.InsertItem(index=item_index, label=str(offset_index))
         def get_artist_name(_artist: Artist) -> str:
             """extract the name of the artists. Should be used in a map iteration function to iterate through the artists collaboration
 

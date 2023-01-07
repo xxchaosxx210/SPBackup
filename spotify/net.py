@@ -5,6 +5,9 @@ import spotify.const as const
 from spotify.serializers.tracks import Tracks
 from spotify.serializers.user import User
 from spotify.serializers.playlist_info import PlaylistInfo
+from spotify.serializers.playlist_info import Tracks
+
+from spotify.debug import debug
 
 logger = logging.getLogger()
 
@@ -151,10 +154,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
     Returns:
         dict: A dictionary containing the playlist information
     """
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json",
-    }
+    headers = create_auth_token_header(access_token)
     # the fields what we want returned you add more later check the spotify.serializers.playlist_info file for the classnames and properties returned
     # dont forget to update that file if you add or remove any more to the fields
     query_params = {
@@ -172,3 +172,27 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
                 plylist = PlaylistInfo(**json_response)
                 return plylist
             raise_spotify_exception(response)
+
+async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100):
+    params = {
+        "offset": offset,
+        "limit": limit
+    }
+    headers = create_auth_token_header(access_token)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            const.URI_PLAYLIST_TRACKS(playlist_id), headers, params=params) as response:
+            if response.status == const.STATUS_OK:
+                data = await response.json()
+                return data
+            raise_spotify_exception(response)
+
+async def get_tracks_from_url(access_token: str, url: str):
+    headers = create_auth_token_header(access_token)
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url, headers=headers) as response:
+            if response.status == const.STATUS_OK:
+                tracks = await response.json()
+                return Tracks(**tracks)
+            raise_spotify_exception(response)
+

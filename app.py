@@ -15,6 +15,7 @@ from spotify.net import authorize
 from spotify.net import get_playlists
 from spotify.net import get_user_info
 from spotify.net import get_playlist
+from spotify.net import get_tracks_from_url
 from spotify.net import SpotifyError
 from spotify.serializers.playlist_info import PlaylistInfo
 import spotify.const as const
@@ -63,10 +64,19 @@ class SPBackupApp(wx.App):
     
     async def retrieve_playlist(self, playlist_id: int):
         try:
-            playlist: PlaylistInfo  = await get_playlist(State.get_token(), playlist_id)
+            playlist: PlaylistInfo = await get_playlist(State.get_token(), playlist_id)
+            State.set_playlist(playlist)
             wx.CallAfter(
-                self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate, playlist=playlist
-            )
+                self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate)
+        except SpotifyError as err:
+            State.set_playlist(None)
+            self.handle_spotify_error(error=err)
+
+    async def retrieve_tracks(self, url: str):
+        try:
+            tracks = await get_tracks_from_url(State.get_token(), url)
+            State.update_playlist_tracks(tracks)
+            wx.CallAfter(self.frame.main_panel.playlists_spw.playlistinfo_ctrl.populate)
         except SpotifyError as err:
             self.handle_spotify_error(error=err)
     
