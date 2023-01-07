@@ -1,7 +1,7 @@
 import wx
 import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlist_info import PlaylistInfo
-from spotify.serializers.playlist_info import Track
+from spotify.serializers.playlist_info import Artist
 from spotify.serializers.playlist_info import Item
 
 
@@ -23,7 +23,7 @@ class TrackListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
             # if column == "#":
             #     self.SetColumnWidth(index, 30)
         
-        self.SetColumnWidth(0, 20)
+        self.SetColumnWidth(0, 50)
         self.SetColumnWidth(1, 300)
         self.SetColumnWidth(2, 200)
         self.SetColumnWidth(3, 200)
@@ -37,22 +37,29 @@ class TrackListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     
     def populate(self, playlist: PlaylistInfo):
         self.clear_items()
-        for index, item in enumerate(playlist.tracks.items):
-            self.add_item(index, item)
+        for item_index, item in enumerate(playlist.tracks.items):
+            self.add_item(item_index, item)
 
     def clear_items(self):
         self.DeleteAllItems()
         self._items = []
     
-    def add_item(self, index: int, item: Item):
+    def add_item(self, item_index: int, item: Item):
         self._items.append(item)  # Add the PlaylistInfo object to the list
+        row_index = self.InsertItem(index=item_index, label=str(item_index+1))
+        def get_artist_name(_artist: Artist) -> str:
+            """extract the name of the artists. Should be used in a map iteration function to iterate through the artists collaboration
 
-        self.InsertItem(index, str(index+1), index)
-        def get_artist_name(_artist):
+            Args:
+                _artist (Artist): the artist from the item
+
+            Returns:
+                str: the name of the artist
+            """
             return _artist.name
         # Append artists
-        self.SetItem(index, 1, item.track.name)
-        artist_string = " / ".join(map(get_artist_name, item.track.album.artists))
-        self.SetItem(index, 2, artist_string)
-        self.SetItem(index, 3, item.track.album.name)
-        self.SetItem(index, 4, item.added_at)
+        self.SetItem(row_index, 1, item.track_name)
+        artist_string = " / ".join(map(get_artist_name, item.track_album.artists))
+        self.SetItem(row_index, 2, artist_string)
+        self.SetItem(row_index, 3, item.track_album.name)
+        self.SetItem(row_index, 4, item.added_at)

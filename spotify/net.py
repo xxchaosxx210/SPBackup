@@ -177,7 +177,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         "Content-Type": "application/json",
     }
     query_params = {
-        "fields": "name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
+        "fields": "id,name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
