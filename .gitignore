@@ -152,4 +152,4 @@ cython_debug/
 #.idea/
 .token.json
 .playlist.json
-\spotify\debug\data\*.*
+spotify/debug/data/

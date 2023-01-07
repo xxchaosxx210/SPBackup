@@ -2,7 +2,7 @@ import os
 import logging
 import json
 
-DEBUG = True
+DEBUG = False
 
 _Log = logging.getLogger()
 
@@ -25,7 +25,7 @@ def save(filename: str, data: object) -> bool:
     result = True
     try:
         pathname = os.path.join(DATA_PATH, filename)
-        with open(pathname) as fp:
+        with open(pathname, "w") as fp:
             fp.write(json.dumps(data))
             _Log.info(f"Data has been saved to {pathname}")
     except Exception as err:

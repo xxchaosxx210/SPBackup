@@ -18,7 +18,7 @@ from spotify.net import get_playlists
 from spotify.net import get_user_info
 from spotify.net import get_playlist
 from spotify.net import SpotifyError
-from spotify.serializers.playlist_info import Playlist as PlaylistInfo
+from spotify.serializers.playlist_info import PlaylistInfo
 import spotify.const as const
 
 

@@ -4,10 +4,11 @@ import asyncio
 import spotify.const as const
 from spotify.serializers.tracks import Tracks
 from spotify.serializers.user import User
-from spotify.serializers.playlist_info import Playlist as PlaylistInfo
+from spotify.serializers.playlist_info import PlaylistInfo
 
 logger = logging.getLogger()
 
+from spotify.debug import debug as sp_debug
 
 class SpotifyError(Exception):
 
@@ -176,7 +177,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         "Content-Type": "application/json",
     }
     query_params = {
-        "fields": "name,tracks(items(added_at,track(album,artists,href,uri,name,next,previous,offset,total)))",
+        "fields": "name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -186,8 +187,8 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         ) as response:
             if response.status == 200:
                 json_response = await response.json()
-                import json
-                open(".playlist.json", "w").write(json.dumps(json_response))
+                if sp_debug.DEBUG:
+                    sp_debug.save(".get_playlist_output.json", json_response)
                 plylist = PlaylistInfo(**json_response)
                 return plylist
             raise_spotify_exception(response)

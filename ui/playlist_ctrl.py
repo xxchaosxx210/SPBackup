@@ -1,6 +1,6 @@
 import wx
 import wx.lib.mixins.listctrl as listmix
-from spotify.serializers.playlist_info import Playlist
+from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Track
 from spotify.serializers.playlist_info import Item
 
@@ -35,7 +35,7 @@ class TrackListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.setResizeColumn(2)
         self.SetAutoLayout(True)
     
-    def populate(self, playlist: Playlist):
+    def populate(self, playlist: PlaylistInfo):
         self.clear_items()
         for index, item in enumerate(playlist.tracks.items):
             self.add_item(index, item)
@@ -45,7 +45,7 @@ class TrackListCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self._items = []
     
     def add_item(self, index: int, item: Item):
-        self._items.append(item)  # Add the Playlist object to the list
+        self._items.append(item)  # Add the PlaylistInfo object to the list
 
         self.InsertItem(index, str(index+1), index)
         def get_artist_name(_artist):
