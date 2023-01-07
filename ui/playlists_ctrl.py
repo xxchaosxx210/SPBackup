@@ -2,6 +2,55 @@ import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlist import Playlist
+from globals.state import State
+import globals.logger as logger
+
+class PlaylistsToolBar(wx.Panel):
+
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        # Create a horizontal box sizer
+        h_box = wx.BoxSizer(wx.HORIZONTAL)
+
+        # Create a vertical box sizer
+        v_box = wx.BoxSizer(wx.VERTICAL)
+
+        # Add the horizontal box sizer to the vertical box sizer
+        v_box.Add(h_box, 1, wx.EXPAND)
+
+        # Create the "prev" button and bind the event handler
+        prev_btn = wx.Button(self, label="prev")
+        self.Bind(wx.EVT_BUTTON, self.on_prev, prev_btn)
+        # Add the button to the horizontal box sizer
+        h_box.Add(prev_btn, 0, wx.ALL, 5)
+
+        # Create the "next" button and bind the event handler
+        next_btn = wx.Button(self, label="next")
+        self.Bind(wx.EVT_BUTTON, self.on_next, next_btn)
+        # Add the button to the horizontal box sizer
+        h_box.Add(next_btn, 0, wx.ALL, 5)
+
+        # Set the sizer for the panel
+        self.SetSizer(v_box)
+
+    def on_prev(self, event):
+        # Handle the "prev" button press here
+        playlist = State.get_playlist()
+        if playlist:
+            if playlist.tracks.previous is not None:
+                app = wx.GetApp()
+                asyncio.run(app.retrieve_tracks(playlist.tracks.previous))
+            logger.console(f'Previous page link is: {playlist.tracks.next}')
+
+    def on_next(self, event):
+        # Handle the "next" button press here
+        playlist = State.get_playlist()
+        if playlist:
+            if playlist.tracks.next is not None:
+                app = wx.GetApp()
+                asyncio.run(app.retrieve_tracks(playlist.tracks.next))
+            logger.console(f'Next page link is: {playlist.tracks.next}')
 
 
 class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
