@@ -87,6 +87,7 @@ class RedirectListener(threading.Thread):
                         first_space = string.index(" ")
                         code = string[:first_space]
                         try:
+                            # raise SpotifyError(405, "This is a test on the spotifyerror code")
                             token = await_on_sync_call(exchange_code_for_token, code=code)
                             self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
                         except SpotifyError as err:

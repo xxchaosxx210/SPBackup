@@ -75,11 +75,12 @@ class SPBackupApp(wx.App):
         Args:
             error (SpotifyError): exceptioon object
         """
-        if error.code == 401:
+        if error.code == const.STATUS_BAD_TOKEN:
+            # bad token ask for a re-authorize request from the user
             wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)
             settings.remove()
             self.start_listening_for_redirect()
-        elif error.code == 403:
+        elif error.code == const.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
             settings.remove()
         else:

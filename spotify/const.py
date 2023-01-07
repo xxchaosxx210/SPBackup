@@ -13,6 +13,12 @@ PLAYLIST_MODIFY_PUBLIC = "playlist-modify-public"
 PLAYLIST_MODIFY_PRIVATE = "playlist-modify-private"
 PLAYLIST_READ_COLLABORATIVE = "playlist-read-collaborative"
 
+# STATUS CODES
+STATUS_OK = 200
+STATUS_BAD_TOKEN = 401
+STATUS_BAD_OAUTH_REQUEST = 403
+STATUS_LIMIT_RATE_REACHED = 429
+
 # Authenticating Uri
 URL_AUTHORIZE = 'https://accounts.spotify.com/authorize'
 URL_TOKEN_AUTHENTICATE = "https://accounts.spotify.com/api/token"

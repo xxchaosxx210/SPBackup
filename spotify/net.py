@@ -8,8 +8,6 @@ from spotify.serializers.playlist_info import PlaylistInfo
 
 logger = logging.getLogger()
 
-from spotify.debug import debug as sp_debug
-
 class SpotifyError(Exception):
 
     def __init__(self, code: int, text: str, *args, **kwargs):
@@ -58,11 +56,11 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
         SpotifyError: _description_
         SpotifyError: _description_
     """
-    if response.status == 401:
+    if response.status == const.STATUS_BAD_TOKEN:
         raise SpotifyError(response.status, "Bad or Expired Token. Please Re-Authenticate")
-    elif response.status == 403:
+    elif response.status == const.STATUS_BAD_OAUTH_REQUEST:
         raise SpotifyError(response.status, "Wrong Consumer key, Bad Nonce or expired timestamp. You may need to Logout and Login into your account again")
-    elif response.status == 429:
+    elif response.status == const.STATUS_LIMIT_RATE_REACHED:
         raise SpotifyError(response.status, "The App has exceeded its rate")
     else:
         raise SpotifyError(response.status, f'Unknown status code: {response.status}. Please check Spotify API documentation for the error')
@@ -85,7 +83,7 @@ async def authorize(scopes: tuple):
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(const.URL_AUTHORIZE, params=auth_params) as response:
-            if response.status == 200:
+            if response.status == const.STATUS_OK:
                 url = response.url.human_repr()
                 return url
             raise_spotify_exception(response)
@@ -107,14 +105,10 @@ async def exchange_code_for_token(code: str) -> str:
     token_headers = create_auth_header()
     async with aiohttp.ClientSession() as session:
         async with session.post(const.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers) as response:
-            if response.status == 200:
+            if response.status == const.STATUS_OK:
                 json_response = await response.json()
                 return json_response["access_token"]
             raise_spotify_exception(response)
-    # response = requests.post(const.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers)
-    # if response.status == 200:
-    #     return response.json()["access_token"]
-    # raise_spotify_exception(response)
 
 async def get_playlists(token: str) -> tuple:
   # Set the authorization header with the access token
@@ -126,7 +120,7 @@ async def get_playlists(token: str) -> tuple:
     # Send a GET request to the playlist endpoint using the session
     async with session.get(const.URI_PLAYLISTS, headers=headers) as response:
       # If the request was successful, return the list of playlists
-      if response.status == 200:
+      if response.status == const.STATUS_OK:
         json_response = await response.json()
         return json_response["items"]
       # If the request was not successful, raise an exception
@@ -140,28 +134,12 @@ async def get_user_info(token: str) -> User:
         # Send the GET request
         async with session.get(const.URI_USER, headers=headers) as response:
             # Check the status code
-            if response.status != 200:
+            if response.status != const.STATUS_OK:
                 raise_spotify_exception(response)
 
             # Return the user information as a dictionary
             json_response = await response.json()
             return User(**json_response)
-
-# async def get_playlist(token: str, playlist_id: str) -> dict:
-#     headers = create_auth_token_header(token)
-
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(const.URI_PLAYLIST(playlist_id), headers=headers) as response:
-#             if response.status == 200:
-#                 return await response.json()
-#             raise_spotify_exception(response)
-    # Send the request to the Spotify API
-    # response = requests.get(const.URI_PLAYLIST(playlist_id), headers=headers)
-    # logger.info(f"Response: {response.__str__()}")
-    # # Check the response status code
-    # response.raise_for_status()
-    # # Return the playlist data
-    # return response.json()
 
 async def get_playlist(access_token: str, playlist_id: str) -> dict:
     """Retrieve a playlist from the Spotify API
@@ -188,58 +166,9 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
             headers=headers,
             params=query_params
         ) as response:
-            if response.status == 200:
+            if response.status == const.STATUS_OK:
                 json_response = await response.json()
                 # sp_debug.save(".get_playlist_output.json", json_response)
                 plylist = PlaylistInfo(**json_response)
                 return plylist
             raise_spotify_exception(response)
-
-# async def get_playlist_items(access_token: str, playlist_id: str, limit: int = 20, offset: int = 0) -> dict:
-#     """Retrieve the items in a playlist from the Spotify API
-
-#     Args:
-#         access_token (str): A valid Spotify API access token
-#         playlist_id (str): The Spotify ID of the playlist
-#         limit (int, optional): The maximum number of items to retrieve. Defaults to 20.
-#         offset (int, optional): The index of the first item to retrieve. Defaults to 0.
-
-#     Returns:
-#         dict: A dictionary containing the playlist items
-#     """
-#     headers = {
-#         "Authorization": f"Bearer {access_token}",
-#         "Content-Type": "application/json",
-#     }
-#     headers = create_auth_token_header(access_token)
-    
-#     params = {
-#         "limit": limit,
-#         "offset": offset,
-#     }
-#     async with aiohttp.ClientSession() as session:
-#         async with session.get(
-#             f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks",
-#             headers=headers,
-#             params=params,
-#         ) as response:
-#             if response.status == 200:
-#                 return await response.json()
-#             elif response.status == 403:
-#                 raise SpotifyError(code=response.status, response_text="Rejected. Please logout and login to your account again from Spotify")
-#             else:
-#                 raise SpotifyError(code=response.status, response_text="An error occurred while retrieving the playlist items")
-
-# async def get_playlist_items(token, playlist_id):
-#   headers = create_auth_token_header(token)
-
-#   # Send the request to the API endpoint
-# #   response = requests.get(const.URI_PLAYLIST_TRACKS(playlist_id), headers=headers)
-# #   logger.info(f"Response: {response.__str__()}")
-# #   # Raise an exception if the request fails
-# #   response.raise_for_status()
-
-# #   # Extract the JSON response
-# #   data = response.json()
-# #   model = Tracks.from_orm(data)
-# #   return model
