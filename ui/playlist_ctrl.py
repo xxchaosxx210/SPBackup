@@ -1,8 +1,8 @@
 import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
-from spotify.serializers.playlist_info import Artist
-from spotify.serializers.playlist_info import Item
+from spotify.validators.playlist_info import Artist
+from spotify.validators.playlist_info import Item
 from ui.navbuttonpanel import NavButtonPanel
 
 from globals.state import (

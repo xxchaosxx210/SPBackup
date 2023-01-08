@@ -1,7 +1,7 @@
 import threading
-from spotify.serializers.playlist_info import PlaylistInfo
-from spotify.serializers.playlist_info import Tracks
-from spotify.serializers.playlists import Playlists
+from spotify.validators.playlist_info import PlaylistInfo
+from spotify.validators.playlist_info import Tracks
+from spotify.validators.playlists import Playlists
 
 
 class UI:

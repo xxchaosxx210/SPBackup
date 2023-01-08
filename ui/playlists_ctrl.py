@@ -1,7 +1,7 @@
 import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
-from spotify.serializers.playlists import Item as PlaylistsItem
+from spotify.validators.playlists import Item as PlaylistsItem
 from globals.state import (
     State,
     UI

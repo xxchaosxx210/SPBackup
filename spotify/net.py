@@ -2,11 +2,11 @@ import aiohttp
 import logging
 import asyncio
 import spotify.const as const
-from spotify.serializers.tracks import Tracks
-from spotify.serializers.user import User
-from spotify.serializers.playlist_info import PlaylistInfo
-from spotify.serializers.playlist_info import Tracks
-from spotify.serializers.playlists import Playlists
+from spotify.validators.tracks import Tracks
+from spotify.validators.user import User
+from spotify.validators.playlist_info import PlaylistInfo
+from spotify.validators.playlist_info import Tracks
+from spotify.validators.playlists import Playlists
 
 from spotify.debug import debug
 
@@ -154,7 +154,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         dict: A dictionary containing the playlist information
     """
     headers = create_auth_token_header(access_token)
-    # the fields what we want returned you add more later check the spotify.serializers.playlist_info file for the classnames and properties returned
+    # the fields what we want returned you add more later check the spotify.validators.playlist_info file for the classnames and properties returned
     # dont forget to update that file if you add or remove any more to the fields
     query_params = {
         "fields": "id,name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",

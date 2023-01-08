@@ -38,19 +38,29 @@ class MainFrame(wx.Frame):
         # Create a Details menu item
         details_item = wx.MenuItem(user_menu, wx.ID_ANY, "Details")
         user_menu.Append(details_item)
-
-        # Bind an event handler to the menu item
         self.Bind(wx.EVT_MENU, self.on_details, details_item)
 
         # Create a Re-authorize menu item
         reauth_item = wx.MenuItem(user_menu, wx.ID_ANY, "Re-authorize")
         user_menu.Append(reauth_item)
-
-        # Bind an event handler to the menu item
         self.Bind(wx.EVT_MENU, self.on_reauth, reauth_item)
 
         # Add the User menu to the menu bar
         menu_bar.Append(user_menu, "User")
+
+        # View Menu creation
+        view_menu = wx.Menu()
+
+        # Create a Hide Playlists MenuItem
+        self.hide_playlists_menuitem = wx.MenuItem(view_menu, wx.ID_ANY, "Hide Playlists", kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.toggle_hide_playlists, self.hide_playlists_menuitem)
+        view_menu.Append(self.hide_playlists_menuitem)
+        # Create a Hide Tracks MenuItem
+        self.hide_tracks_menuitem = wx.MenuItem(view_menu, wx.ID_ANY, "Hide Tracks", kind=wx.ITEM_CHECK)
+        self.Bind(wx.EVT_MENU, self.toggle_hide_tracks, self.hide_tracks_menuitem)
+        view_menu.Append(self.hide_tracks_menuitem)
+
+        menu_bar.Append(view_menu, "View")
 
         # Set the frame's menu bar
         self.SetMenuBar(menu_bar)
@@ -62,6 +72,35 @@ class MainFrame(wx.Frame):
     def on_reauth(self, event):
         """Event handler for the Re-authorize menu item."""
         self.app.reauthenticate()
+    
+    def toggle_hide_playlists(self, evt):
+        menu: wx.Menu = evt.GetEventObject()
+        # make sure the other window isnt split
+        if self.hide_tracks_menuitem.IsChecked():
+            # uncheck this menuitem and return do nothing
+            # this makes sure only one menuitem is checked at a time
+            self.hide_playlists_menuitem.Check(False)
+            return
+        if menu.IsChecked(self.hide_playlists_menuitem.GetId()):
+            UI.playlists_spw.Unsplit(UI.playlists_ctrl)
+            UI.playlists_ctrl.Disable()
+        else:
+            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
+            UI.playlists_ctrl.Enable()
+    
+    def toggle_hide_tracks(self, evt):
+        menu: wx.Menu = evt.GetEventObject()
+        if self.hide_playlists_menuitem.IsChecked():
+            # uncheck this menuitem and return do nothing
+            # this makes sure only one menuitem is checked at a time
+            self.hide_tracks_menuitem.Check(False)
+            return
+        if menu.IsChecked(self.hide_tracks_menuitem.GetId()):
+            UI.playlists_spw.Unsplit(UI.playlistinfo_ctrl)
+        else:
+            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
+
+
 
 class MainPanel(wx.Panel):
     def __init__(self, parent):
