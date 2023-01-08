@@ -14,7 +14,7 @@ class MainFrame(wx.Frame):
 
         self.main_panel = MainPanel(self)
 
-        self.sbar = self.CreateStatusBar()
+        UI.statusbar = self.CreateStatusBar()
 
         self.create_menubar()
 

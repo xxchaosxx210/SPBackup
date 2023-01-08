@@ -83,7 +83,7 @@ class SPBackupApp(wx.App):
             return
         State.set_playlists(playlists)
         wx.CallAfter(UI.playlists_ctrl.populate)
-        wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
+        wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
     
     async def retrieve_user_info(self):
         """sends a user information request and opens a dialog with user details
@@ -146,14 +146,14 @@ class SPBackupApp(wx.App):
         """
         if error.code == const.STATUS_BAD_TOKEN:
             # bad token ask for a re-authorize request from the user
-            wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)
+            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)
             config.remove()
             self.start_listening_for_redirect()
         elif error.code == const.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
             config.remove()
         else:
-            wx.CallAfter(self.frame.sbar.SetStatusText, text=error.response_text)                
+            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)                
     
     def on_listener_response(self, status: str, value: any):
         """response from the RedirectListener
@@ -169,7 +169,7 @@ class SPBackupApp(wx.App):
             State.set_token(value)
             logger.console("Response from RedirectListener: Token recieved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
-            wx.CallAfter(self.frame.sbar.SetStatusText, "Retrieving Playlists...")
+            wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             asyncio.run(self.retrieve_playlists())
         elif status == RedirectListener.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
@@ -187,12 +187,12 @@ class SPBackupApp(wx.App):
         # usually a auth error
         elif status == RedirectListener.EVENT_SPOTIFY_ERROR:
             logger.console(f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
-            wx.CallAfter(self.frame.sbar.SetStatusText, value.response_text)
+            wx.CallAfter(UI.statusbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
         elif status == RedirectListener.EVENT_SOCKET_ERROR:
             error_message = f"Response from RedirectListener: Socket Error, Check the debug.log for more details. {value.__str__()}"
             logger.console(error_message, "error")
-            wx.CallAfter(self.frame.sbar.SetStatusText, error_message)
+            wx.CallAfter(UI.statusbar.SetStatusText, error_message)
             wx.CallAfter(self.destroy_auth_dialog)
         
 

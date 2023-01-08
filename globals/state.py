@@ -13,6 +13,7 @@ class UI:
     playlists_toolbar = None
     playlistinfo_toolbar = None
     playlists_spw = None
+    statusbar = None
 
 
 class State:
