@@ -5,7 +5,6 @@ from spotify.serializers.playlist_info import Artist
 from spotify.serializers.playlist_info import Item
 
 from globals.state import State
-import globals.logger as logger
 
 
 class PlaylistInfoToolBar(wx.Panel):

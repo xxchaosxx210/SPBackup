@@ -2,15 +2,14 @@ import threading
 from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Tracks
 from spotify.serializers.playlists import Playlists
-from ui.playlist_ctrl import PlaylistInfoCtrl
-from ui.playlists_ctrl import PlaylistsCtrl
+
 
 class UI:
 
     # store our wxcontrols
 
-    playlistsctrl: PlaylistsCtrl = None
-    playlistinfoctrl: PlaylistInfoCtrl = None
+    playlistsctrl = None
+    playlistinfoctrl = None
 
 
 class State:
