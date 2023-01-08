@@ -20,12 +20,14 @@ _MAX_BUBBLE_SIZE = 7
 _MIN_BUBBLE_AMOUNT = 100
 _MAX_BUBBLE_AMOUNT = 200
 
-_BACKGROUND_COLOUR = (173,216,230)
-_BUBBLE_COLOUR_FILL = (173, 216, 230)
-_BUBBLE_COLOUR_OUTLINE = (255, 255, 255)
-_TEXT_BOX_COLOUR_FILL = (0, 148, 255, 100)
-_TEXT_BOX_COLOUR_OUTLINE = (0, 175, 229, 200)
+_BACKGROUND_COLOUR = (30,215,96)
+_BUBBLE_COLOUR_FILL = (30, 190, 75)
+_BUBBLE_COLOUR_OUTLINE = (30, 160, 65)
+_TEXT_BOX_COLOUR_FILL = (50, 230, 100, 200)
+_TEXT_BOX_COLOUR_OUTLINE = (20, 90, 30, 255)
 _DCColour = namedtuple("Colour", ["pen", "brush"])
+_TEXT_COLOUR_FILL = (0, 0, 0)
+_TEXT_COLOUR_OUTLINE = (0, 0, 0)
 
 
 def _get_time(previous_time: float) -> tuple:
@@ -189,7 +191,7 @@ class Line:
     def __init__(self, canvas: wx.Window, text: str, header: str):
         self.text = text
         self.canvas = canvas
-        self.font = canvas.GetFont()
+        self.font: wx.Font = canvas.GetFont()
         if header == "h1":
             self.font.SetPointSize(16)
         elif header == "h2":
@@ -287,7 +289,7 @@ class Canvas(wx.Window):
                 self.Refresh()
 
     def _on_paint(self, evt: wx.PaintEvent):
-        dc = wx.GCDC(wx.BufferedPaintDC(self, self._bitmap))
+        dc: wx.GCDC = wx.GCDC(wx.BufferedPaintDC(self, self._bitmap))
         dc.Clear()
         # Draw Backgrounds
         dc.SetPen(self.dc_bck.pen)
@@ -301,10 +303,12 @@ class Canvas(wx.Window):
         # Draw Text Box
         dc.SetPen(self.textbox.bck_pen)
         dc.SetBrush(self.textbox.bck_brush)
-        dc.DrawRectangle(rect=self.textbox.rect)
+        dc.DrawRoundedRectangle(rect=self.textbox.rect, radius=10)
+        # dc.DrawRectangle(rect=self.textbox.rect)
         # Draw Lines
-        dc.SetPen(wx.BLACK_PEN)
-        dc.SetBrush(wx.BLACK_BRUSH)
+        dc.SetPen(wx.Pen(wx.Colour(*_TEXT_BOX_COLOUR_OUTLINE)))
+        dc.SetBrush(wx.Brush(wx.Colour(*_TEXT_COLOUR_FILL)))
+        
         for line in self.textbox.lines:
             dc.SetFont(line.font)
             dc.DrawText(line.text, line.rect.x, line.rect.y)
