@@ -5,6 +5,7 @@ from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
 from globals.state import UI
 import image_manager
+from bubbledialog import BubbleDialog
 
 class MainFrame(wx.Frame):
 
@@ -65,8 +66,23 @@ class MainFrame(wx.Frame):
 
         menu_bar.Append(view_menu, "View")
 
+        help_menu = wx.Menu()
+        about_menuitem = wx.MenuItem(help_menu, wx.ID_ANY, "About")
+        self.Bind(wx.EVT_MENU, self.on_about_menu, about_menuitem)
+        help_menu.Append(about_menuitem)
+
+        menu_bar.Append(help_menu, "Help")
+
         # Set the frame's menu bar
         self.SetMenuBar(menu_bar)
+    
+    def on_about_menu(self, evt):
+        dlg = BubbleDialog(self, -1, "SPBackup", [
+            "Spotify Backup", "Coded by Paul Millar", "Beta tested by Conor Moore",
+            "version 1.0b", "09-01-2023"
+        ], (640, 480))
+        dlg.ShowModal()
+        dlg.Destroy()
 
     def on_details(self, event):
         """Event handler for the Details menu item."""
