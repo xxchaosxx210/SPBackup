@@ -16,8 +16,10 @@ class PlaylistInfoNavButtonPanel(NavButtonPanel):
 
     def change_state(self):
         playlist = State.get_playlist()
-        self.next_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.next else self.next_button.Enable(True)
-        self.prev_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.previous else self.prev_button.Enable(True)
+        self.next_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.next \
+            else self.next_button.Enable(True)
+        self.prev_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.previous \
+            else self.prev_button.Enable(True)
 
     def on_prev_button(self, event):
         # Handle the "prev" button press here
