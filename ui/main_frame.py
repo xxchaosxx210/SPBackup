@@ -3,6 +3,7 @@ import asyncio
 from ui.playlist_splitterwindow import PlaylistSplitterWindow
 from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
+from globals.state import UI
 
 class MainFrame(wx.Frame):
 
@@ -66,12 +67,12 @@ class MainPanel(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.playlists_toolbar = PlaylistsToolBar(self)
-        self.playlists_spw = PlaylistSplitterWindow(self)
-        self.playlistinfo_toolbar = PlaylistInfoToolBar(self)
+        UI.playlists_toolbar = PlaylistsToolBar(self)
+        UI.playlists_spw = PlaylistSplitterWindow(self)
+        UI.playlistinfo_toolbar = PlaylistInfoToolBar(self)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(self.playlists_toolbar, 0, wx.EXPAND, 0)
-        vbox.Add(self.playlists_spw, 1, wx.EXPAND, 0)
-        vbox.Add(self.playlistinfo_toolbar, 0, wx.EXPAND|wx.ALL, 0)
+        vbox.Add(UI.playlists_toolbar, 0, wx.EXPAND, 0)
+        vbox.Add(UI.playlists_spw, 1, wx.EXPAND, 0)
+        vbox.Add(UI.playlistinfo_toolbar, 0, wx.EXPAND|wx.ALL, 0)
         self.SetSizer(vbox)

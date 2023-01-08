@@ -10,6 +10,9 @@ class UI:
 
     playlistsctrl = None
     playlistinfoctrl = None
+    playlists_toolbar = None
+    playlistinfo_toolbar = None
+    playlists_spw = None
 
 
 class State:

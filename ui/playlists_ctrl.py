@@ -2,9 +2,10 @@ import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlists import Item as PlaylistsItem
-from globals.state import State
-import globals.logger as logger
-
+from globals.state import (
+    State,
+    UI
+)
 
 class PlaylistsToolBar(wx.Panel):
 
@@ -42,7 +43,7 @@ class PlaylistsToolBar(wx.Panel):
         self.next_btn.Disable() if not playlists.next else self.next_btn.Enable(True)
         self.prev_btn.Disable() if not playlists.previous else self.prev_btn.Enable(True)
 
-    def on_prev(self, event):
+    def on_prev(self, _):
         # Handle the "prev" button press here
         playlists = State.get_playlists()
         if not playlists or not playlists.previous:
@@ -51,7 +52,7 @@ class PlaylistsToolBar(wx.Panel):
         asyncio.run(app.retrieve_playlist_items(playlists.previous))
         # logger.console(f'Previous page link is: {playlists.previous}')
 
-    def on_next(self, event):
+    def on_next(self, _):
         # Handle the "next" button press here
         playlists = State.get_playlists()
         if not playlists or not playlists.next:
@@ -92,7 +93,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.clear_playlists()
         # Add the playlists to the list control
         playlists = State.get_playlists()
-        self.GetParent().GetParent().playlists_toolbar.change_nav_button_state()
+        UI.playlists_toolbar.change_nav_button_state()
         for index, playlist in enumerate(playlists.items):
             self.add_playlist(index, playlist)
     
