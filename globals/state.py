@@ -8,8 +8,8 @@ class UI:
 
     # store our wxcontrols
 
-    playlistsctrl = None
-    playlistinfoctrl = None
+    playlists_ctrl = None
+    playlistinfo_ctrl = None
     playlists_toolbar = None
     playlistinfo_toolbar = None
     playlists_spw = None

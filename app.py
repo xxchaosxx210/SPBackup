@@ -39,12 +39,31 @@ class SPBackupApp(wx.App):
     def OnInit(self):
         return super().OnInit()
 
+    def reset(self):
+        """cleans up the UI and resets the global state for the Playlists
+        """
+        # Set the Playlists and PlayListInfo state to None
+        State.set_playlist(None)
+        State.set_playlists(None)
+        # Disable the Buttons on the Toolbar
+        UI.playlistinfo_toolbar.change_nav_button_state()
+        UI.playlists_toolbar.change_nav_button_state()
+        # Clear the ListCtrls
+        UI.playlistinfo_ctrl.DeleteAllItems()
+        UI.playlists_ctrl.DeleteAllItems()
+
     def reauthenticate(self):
-        logger.console("Reauthenticating with Spotify...")
+        self.reset()
+        # remove the token
         config.remove()
+        # rerun the process of authentication
         self.run_background_auth_check()
 
     def run_background_auth_check(self):
+        """this function loads the token if not found then new auth request started
+        else will try and load users playlists and store the global token. 
+        """
+        # load the token from our .token.json file
         token = config.load()["token"]
         State.set_token(token)
         if not token:
@@ -55,6 +74,8 @@ class SPBackupApp(wx.App):
             asyncio.run(self.retrieve_playlists())
     
     async def retrieve_playlists(self):
+        """sends a get user playlist request and loads the Playlists listctrl if successful
+        """
         try:
             playlists = await get_playlists(State.get_token())
         except SpotifyError as err:
@@ -65,6 +86,8 @@ class SPBackupApp(wx.App):
         wx.CallAfter(self.frame.sbar.SetStatusText, text="Loaded Playlists successfully")
     
     async def retrieve_user_info(self):
+        """sends a user information request and opens a dialog with user details
+        """
         try:
             response = await get_user_info(State.get_token())
             wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
@@ -72,6 +95,12 @@ class SPBackupApp(wx.App):
             self.handle_spotify_error(error=err)
     
     async def retrieve_playlist(self, playlist_id: int):
+        """sends a playlist request by ID. will set the global playlist if successful.
+        Raises a SpotifyError if unsuccessful
+
+        Args:
+            playlist_id (int): the ID of the playlist too recieve
+        """
         try:
             playlist: PlaylistInfo = await get_playlist(State.get_token(), playlist_id)
             State.set_playlist(playlist)
@@ -82,6 +111,12 @@ class SPBackupApp(wx.App):
             self.handle_spotify_error(error=err)
 
     async def retrieve_tracks(self, url: str):
+        """sends the next or previous link found in the PlaylistsInfo.Tracks object
+        uodates the global tracks state and loads the PlaylistInfoCtrl with the tracks
+
+        Args:
+            url (str): the url to follow. found in State.playlistinfo.tracks
+        """
         try:
             tracks = await get_tracks_from_url(State.get_token(), url)
             State.update_playlist_tracks(tracks)
@@ -90,6 +125,12 @@ class SPBackupApp(wx.App):
             self.handle_spotify_error(error=err)
 
     async def retrieve_playlist_items(self, url: str):
+        """requests foor the next or previous url found in the playlists.next or playlists.previous properties.
+        called when the User presses on the next or previous button
+
+        Args:
+            url (str): the url to follow next
+        """
         try:
             playlists = await get_playlists(token=State.get_token(), url=url)
         except SpotifyError as err:
@@ -163,8 +204,11 @@ class SPBackupApp(wx.App):
         self.auth_dialog.Destroy()
     
     def start_listening_for_redirect(self):
-        """listen on the authorization redirect on port spotify.const.PORT
-        should return a token
+        """
+        sets up the RedirectListener thread. Sends a authorization request to Spotify
+        sets up a socket and listens for reply to the auth url to follow which is prompted to the user
+        once the user clicks authorize then the server will close and send a token to the self.on_listener_response
+        check the spotify.listener for more details
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(

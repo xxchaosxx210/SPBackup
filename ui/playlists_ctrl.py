@@ -40,8 +40,8 @@ class PlaylistsToolBar(wx.Panel):
 
     def change_nav_button_state(self):
         playlists = State.get_playlists()
-        self.next_btn.Disable() if not playlists.next else self.next_btn.Enable(True)
-        self.prev_btn.Disable() if not playlists.previous else self.prev_btn.Enable(True)
+        self.next_btn.Disable() if not playlists or not playlists.next else self.next_btn.Enable(True)
+        self.prev_btn.Disable() if not playlists or not playlists.previous else self.prev_btn.Enable(True)
 
     def on_prev(self, _):
         # Handle the "prev" button press here
