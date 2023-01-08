@@ -4,7 +4,10 @@ import wx.lib.mixins.listctrl as listmix
 from spotify.serializers.playlist_info import Artist
 from spotify.serializers.playlist_info import Item
 
-from globals.state import State
+from globals.state import (
+    State,
+    UI
+)
 
 
 class PlaylistInfoToolBar(wx.Panel):
@@ -22,19 +25,26 @@ class PlaylistInfoToolBar(wx.Panel):
         v_box.Add(h_box, 1, wx.EXPAND)
 
         # Create the "prev" button and bind the event handler
-        prev_btn = wx.Button(self, label="prev")
-        self.Bind(wx.EVT_BUTTON, self.on_prev, prev_btn)
+        self._prev_btn = wx.Button(self, label="prev")
+        self._prev_btn.Disable()
+        self.Bind(wx.EVT_BUTTON, self.on_prev, self._prev_btn)
         # Add the button to the horizontal box sizer
-        h_box.Add(prev_btn, 0, wx.ALL, 5)
+        h_box.Add(self._prev_btn, 0, wx.ALL, 5)
 
         # Create the "next" button and bind the event handler
-        next_btn = wx.Button(self, label="next")
-        self.Bind(wx.EVT_BUTTON, self.on_next, next_btn)
+        self._next_btn = wx.Button(self, label="next")
+        self._next_btn.Disable()
+        self.Bind(wx.EVT_BUTTON, self.on_next, self._next_btn)
         # Add the button to the horizontal box sizer
-        h_box.Add(next_btn, 0, wx.ALL, 5)
+        h_box.Add(self._next_btn, 0, wx.ALL, 5)
 
         # Set the sizer for the panel
         self.SetSizer(v_box)
+
+    def change_nav_button_state(self):
+        playlist = State.get_playlist()
+        self._next_btn.Disable() if not playlist or not playlist.tracks or not playlist.tracks.next else self._next_btn.Enable(True)
+        self._prev_btn.Disable() if not playlist or not playlist.tracks or not playlist.tracks.previous else self._prev_btn.Enable(True)
 
     def on_prev(self, event):
         # Handle the "prev" button press here
@@ -84,6 +94,7 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def populate(self):
         playlist = State.get_playlist()
         self.clear_items()
+        UI.playlistinfo_toolbar.change_nav_button_state()
         for item_index, item in enumerate(playlist.tracks.items):
             self.add_item(item_index, item)
 
