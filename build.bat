@@ -2,4 +2,5 @@
 
 pyinstaller --clean ^
 -n SPBackup ^
---add-data "images\*;images" app.py
+--add-data "images\*;images" ^
+--icon .\images\SPBackup_icon.ico app.py

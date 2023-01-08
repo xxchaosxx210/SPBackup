@@ -4,6 +4,7 @@ from ui.playlist_splitterwindow import PlaylistSplitterWindow
 from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
 from globals.state import UI
+import image_manager
 
 class MainFrame(wx.Frame):
 
@@ -11,6 +12,8 @@ class MainFrame(wx.Frame):
         super().__init__(*args, **kw)
 
         self.app = app
+
+        self.SetIcon(wx.Icon(image_manager.ICON_PATH))
 
         self.main_panel = MainPanel(self)
 

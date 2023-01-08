@@ -1,6 +1,8 @@
 import wx
 import os
 
+ICON_PATH = os.path.join("images", "SPBackup_icon.ico")
+
 def load_image(filename):
     """Load an image file and return a wx.Image object.
 
