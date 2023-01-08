@@ -1,17 +1,17 @@
 import wx
 import image_manager
 
+import wx
+import image_manager
+
 class NavButtonPanel(wx.Panel):
+
     def __init__(self, parent):
         super().__init__(parent)
 
         # Create the prev_button and next_button BitmapButtons
-        self.prev_button = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap())
-        self.next_button = wx.BitmapButton(self, wx.ID_ANY, wx.Bitmap())
-
-        # Set the bitmaps for the prev_button and next_button using the image_manager module
-        self.prev_button.SetBitmap(image_manager.load_image("previous.png"))
-        self.next_button.SetBitmap(image_manager.load_image("next.png"))
+        self.prev_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("previous.png"))
+        self.next_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("next.png"))
 
         # Bind the button press event to the corresponding method
         self.prev_button.Bind(wx.EVT_BUTTON, self.on_prev_button)
@@ -27,6 +27,10 @@ class NavButtonPanel(wx.Panel):
         # Set the sizer of the NavButtonPanel
         self.SetSizer(sizer)
 
+        # Disable the prev_button and next_button
+        self.prev_button.Disable()
+        self.next_button.Disable()
+
     def on_prev_button(self, event):
         # Handle the button press event for the prev_button here
         pass
@@ -34,7 +38,7 @@ class NavButtonPanel(wx.Panel):
     def on_next_button(self, event):
         # Handle the button press event for the next_button here
         pass
-    
-    def change_buttons_state(self):
+
+    def change_state(self):
         # should be overloaded
         pass

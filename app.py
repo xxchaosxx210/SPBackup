@@ -46,7 +46,7 @@ class SPBackupApp(wx.App):
         State.set_playlist(None)
         State.set_playlists(None)
         # Disable the Buttons on the Toolbar
-        UI.playlistinfo_toolbar.change_nav_button_state()
+        UI.playlistinfo_toolbar.navbuttons.change_nav_button_state()
         UI.playlists_toolbar.change_nav_button_state()
         # Clear the ListCtrls
         UI.playlistinfo_ctrl.DeleteAllItems()
