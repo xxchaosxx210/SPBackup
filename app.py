@@ -184,8 +184,6 @@ class SPBackupApp(wx.App):
         # Destroy the dialog
         dlg.Destroy()
 
-    def clean_up(self):
-
 
 def add_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
