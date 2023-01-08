@@ -56,7 +56,7 @@ def initialize():
     if os.path.exists(DATA_PATH):
         return
     try:
-        os.mkdir(DATA_PATH)
+        os.makedirs(DATA_PATH)
         file_log(f"Data directory for json output has been created in path: {DATA_PATH}", "info")
     except OSError as e:
         file_log(f'Error creating debug/data directory. {e.__str__()}', "error")
