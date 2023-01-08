@@ -1,4 +1,6 @@
 import wx
+import ui.style as style
+
 
 class UserDialog(wx.Dialog):
     def __init__(self, parent, user):
@@ -14,30 +16,36 @@ class UserDialog(wx.Dialog):
         self.CenterOnParent()
 
         # Set the dialog background color
-        self.SetBackgroundColour("#191414")
+        self.SetBackgroundColour(style.COLOUR_SPOTIFY_BACKGROUND)
 
-        # Create the display_name text
-        display_name_text = wx.StaticText(self, label=f"Display Name: {user.display_name}")
-        display_name_text.SetForegroundColour("#FFFFFF")
+        DISPLAY_FONT_SIZE = wx.FONTSIZE_MEDIUM
+
+        name_label = style.create_spotify_static_text(self, label="Name:", font_size=DISPLAY_FONT_SIZE)
+        name_value = style.create_spotify_static_text(self, user.display_name, font_size=DISPLAY_FONT_SIZE)
 
         # Create the followers text
-        followers_text = wx.StaticText(self, label=f"Followers: {user.followers.total}")
-        followers_text.SetForegroundColour("#FFFFFF")
+        followers_label = style.create_spotify_static_text(self, label=f"Followers:", font_size=DISPLAY_FONT_SIZE)
+        folowers_value = style.create_spotify_static_text(self, label=str(user.followers.total), font_size=DISPLAY_FONT_SIZE)
 
         # Create the close button
-        close_button = wx.Button(self, label="Close")
-        close_button.SetBackgroundColour("#1DB954")
-        close_button.SetForegroundColour("#FFFFFF")
+        close_button = style.create_spotify_button(parent=self, label="Close")
 
         # Bind the close button click event
         close_button.Bind(wx.EVT_BUTTON, self.on_close)
 
+
+        gs = wx.GridSizer(2, 2, 0, 0)
+        gs.Add(name_label, 0, wx.ALL, 0)
+        gs.Add(name_value, 0, wx.ALL, 0)
+        gs.Add(followers_label, 0, wx.ALL, 0)
+        gs.Add(folowers_value, 0, wx.ALL, 0)
+
         # Create the sizer
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(display_name_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 10)
-        sizer.Add(followers_text, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL | wx.ALIGN_CENTER_VERTICAL, 10)
+        sizer.Add(gs, 1, wx.ALIGN_CENTER_HORIZONTAL|wx.ALL, 10)
+        sizer.AddStretchSpacer(1)
         sizer.Add(close_button, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
-        self.SetSizer(sizer)
+        self.SetSizerAndFit(sizer)
 
         # Remove the close button at the top right corner
         self.SetWindowStyle(self.GetWindowStyle() & ~wx.CLOSE_BOX)
@@ -51,3 +59,18 @@ def show_user_info_dialog(parent, userinfo):
     dlg = UserDialog(parent, userinfo)
     dlg.ShowModal()
     dlg.Destroy()
+
+def demo():
+    # Create an application object
+    app = wx.App()
+    
+    dialog = UserDialog(None, "Conor Moore")
+
+    # Show the dialog
+    dialog.ShowModal()
+
+    # Destroy the dialog
+    dialog.Destroy()
+
+if __name__ == '__main__':
+    demo()

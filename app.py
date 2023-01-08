@@ -36,6 +36,11 @@ class SPBackupApp(wx.App):
     def OnInit(self):
         return super().OnInit()
 
+    def reauthenticate(self):
+        logger.console("Reauthenticating with Spotify...")
+        config.remove()
+        self.run_background_auth_check()
+
     def run_background_auth_check(self):
         token = config.load()["token"]
         State.set_token(token)
@@ -178,6 +183,8 @@ class SPBackupApp(wx.App):
         dlg.ShowModal()
         # Destroy the dialog
         dlg.Destroy()
+
+    def clean_up(self):
 
 
 def add_args() -> argparse.Namespace:

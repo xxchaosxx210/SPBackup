@@ -3,6 +3,13 @@ from spotify.serializers.playlist_info import PlaylistInfo
 from spotify.serializers.playlist_info import Tracks
 from spotify.serializers.playlists import Playlists
 
+
+class UI:
+
+    playlistsctrl = None
+    playlistinfoctrl = None
+
+
 class State:
 
     _token: str = None

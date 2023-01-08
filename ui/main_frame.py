@@ -60,7 +60,7 @@ class MainFrame(wx.Frame):
 
     def on_reauth(self, event):
         """Event handler for the Re-authorize menu item."""
-        pass
+        self.app.reauthenticate()
 
 class MainPanel(wx.Panel):
     def __init__(self, parent):
