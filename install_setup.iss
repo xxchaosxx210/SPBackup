@@ -11,7 +11,7 @@
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{5F1A5C08-40FA-4FA6-ACF0-F36B8909B8A4}
-LicenseFile=C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\LICENSE
+LicenseFile=C:\Users\chaos\Documents\dev\python-projects\SPBackup\LICENSE
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
@@ -23,9 +23,9 @@ DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-OutputDir=C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\installer
+OutputDir=C:\Users\chaos\Documents\dev\python-projects\SPBackup\installer
 OutputBaseFilename=spbackup_setup
-SetupIconFile=C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\images\spbackup_icon.ico
+SetupIconFile=C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\images\spbackup_icon.ico
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
@@ -37,15 +37,15 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
 
 [Files]
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\aiohttp\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\frozenlist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\images\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\multidict\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\pydantic\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\wx\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\yarl\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\dist\SPBackup\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\aiohttp\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\frozenlist\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\images\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\multidict\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\pydantic\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\wx\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\yarl\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "C:\Users\chaos\Documents\dev\python-projects\SPBackup\dist\SPBackup\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]
