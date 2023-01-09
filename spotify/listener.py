@@ -1,6 +1,9 @@
 import threading
 import socket
-from urllib.parse import parse_qs
+from urllib.parse import (
+  urlparse,
+  parse_qs
+)
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
 from spotify.net import await_on_sync_call
@@ -82,12 +85,19 @@ class RedirectListener(threading.Thread):
                         # send the HTML response to the user that they are authenticated
                         self.send_response(conn, HTML)
                         # recieve the code (Hopefully)
-                        data = conn.recv(1024).decode()
-                        # Parse the query string of the received data
-                        query_string = parse_qs(data)
-                        # Extract the code from the query string
-                        # This is buggy and needs more testing
-                        string = query_string["GET /?code"][0]
+                        http_response = conn.recv(1024).decode()
+                        # defragment the headers
+                        parsed_data = urlparse(http_response)
+                        # Parse the query string of the received data into a dict 'code=our_code'
+                        query: dict = parse_qs(parsed_data.query)
+                        string = query["code"][0]
+                        # check for code key in query dict
+                        if not query.get("code", None) or len(query["code"]) < 1:
+                          # there is an issue
+                          self.callback(RedirectListener.EVENT_CODE_ERROR, f"Error: could not find Auth Code in HTTP response... {http_response}")
+                          self.stop_event.set()
+                          return
+                        string = query["code"][0]
                         first_space = string.index(" ")
                         code = string[:first_space]
                         try:

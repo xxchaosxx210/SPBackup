@@ -7,7 +7,7 @@ APP_NAME = "SPBackup"
 APP_VERSION = 1.0
 APP_AUTHOR = "Paul Millar"
 
-TOKEN_PATH = os.path.join(debug.APP_DATA_DIR, ".token.json")
+TOKEN_PATH = os.path.join(debug.APP_SETTINGS_DIR, ".token.json")
 
 def check_data_dir_exists():
     """checks the data path exists if doesnt then dir will be created
