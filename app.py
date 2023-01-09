@@ -256,7 +256,9 @@ def run_app():
 
     multiprocessing.freeze_support()
     spbackup_app = SPBackupApp()
-    frame = MainFrame(app=spbackup_app, parent=None, title="Spotify Backup - coded by Paul Millar")
+    frame = MainFrame(
+        app=spbackup_app, parent=None, title=f"{config.APP_NAME} v{config.APP_VERSION} - coded by {config.APP_AUTHOR}"
+    )
     frame.Show()
     spbackup_app.frame = frame
     spbackup_app.run_background_auth_check()
