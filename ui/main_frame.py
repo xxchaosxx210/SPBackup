@@ -28,7 +28,7 @@ class MainFrame(wx.Frame):
         vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
 
         self.SetSizerAndFit(vbox)
-        self.SetSize((800, 800))
+        self.SetSize((600, 600))
 
 
     def create_menubar(self):
