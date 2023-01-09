@@ -60,13 +60,14 @@ class RedirectListener(threading.Thread):
     EVENT_REQUESTING_AUTHORIZATION = 2
     EVENT_SPOTIFY_ERROR = 3
 
-    def __init__(self, port, client_id, client_secret, mainthread_callback):
+    def __init__(self, port, client_id, client_secret, app_name, mainthread_callback):
         super().__init__()
         self.port = port
         self.stop_event = threading.Event()
         self.client_id = client_id
         self.client_secret = client_secret
         self.callback = mainthread_callback
+        self.app_name = app_name
 
     def run(self):
         """Listen for a redirect on the specified port"""
@@ -78,30 +79,35 @@ class RedirectListener(threading.Thread):
                 try:
                     conn, addr = s.accept()
                     with conn:
-                        data = conn.recv(1024).decode()
+                        # send the HTML response to the user that they are authenticated
                         self.send_response(conn, HTML)
+                        # recieve the code (Hopefully)
+                        data = conn.recv(1024).decode()
                         # Parse the query string of the received data
                         query_string = parse_qs(data)
                         # Extract the code from the query string
+                        # This is buggy and needs more testing
                         string = query_string["GET /?code"][0]
                         first_space = string.index(" ")
                         code = string[:first_space]
                         try:
-                            # raise SpotifyError(405, "This is a test on the spotifyerror code")
+                            # send an async request to obtain the token
                             token = await_on_sync_call(exchange_code_for_token, code=code)
+                            # all went well we should now have an auth token
                             self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
                         except SpotifyError as err:
                             self.callback(RedirectListener.EVENT_SPOTIFY_ERROR, err)
-                        # Set the stop event
-                        self.stop_event.set()
+                        finally:
+                          self.stop_event.set()
                 except socket.error as err:
+                  # Should be a network issue
                     debug.file_log(f"Error in RedirectListener reading from socket. {err.__str__()}", "error")
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
     
     def send_response(self, conn, html):
         # Set the response to an HTML page that says "Thank you"
-        response = "HTTP/1.1 200 OK\nContent-Type: text/html\n\n"
-        response += html #"<html><body>Thank you</body></html>"
+        response = f"HTTP/1.1 200 OK\nContent-Type: text/html\n\nUser-Agent: {self.app_name}\r\n\r\n"
+        response += html
         conn.sendall(response.encode())
 
 

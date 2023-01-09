@@ -19,6 +19,8 @@ STATUS_BAD_TOKEN = 401
 STATUS_BAD_OAUTH_REQUEST = 403
 STATUS_LIMIT_RATE_REACHED = 429
 
+USER_AGENT_HEADER = "SPBackup-App"
+
 # Authenticating Uri
 URL_AUTHORIZE = 'https://accounts.spotify.com/authorize'
 URL_TOKEN_AUTHENTICATE = "https://accounts.spotify.com/api/token"

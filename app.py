@@ -167,7 +167,7 @@ class SPBackupApp(wx.App):
             # save the token to file
             config.save(value)
             State.set_token(value)
-            logger.console("Response from RedirectListener: Token recieved", "info")
+            logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             asyncio.run(self.retrieve_playlists())
@@ -215,6 +215,7 @@ class SPBackupApp(wx.App):
                 PORT, 
                 const.CLIENT_ID, 
                 const.CLIENT_SECRET,
+                config.APP_NAME,
                 self.on_listener_response)
             self.listener.start()
     
