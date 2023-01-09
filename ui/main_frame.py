@@ -5,7 +5,7 @@ from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
 from globals.state import UI
 import image_manager
-from bubbledialog import BubbleDialog
+from ui.dialogs.bubbledialog import BubbleDialog
 
 class MainFrame(wx.Frame):
 

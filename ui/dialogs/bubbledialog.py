@@ -5,7 +5,7 @@ import threading
 import queue
 from collections import namedtuple
 
-from geometry.vector import (
+from ui.dialogs.geometry.vector import (
     Vector,
     random_direction,
     rotate
