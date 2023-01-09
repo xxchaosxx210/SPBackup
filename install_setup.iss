@@ -11,6 +11,7 @@
 ; NOTE: The value of AppId uniquely identifies this application. Do not use the same AppId value in installers for other applications.
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{5F1A5C08-40FA-4FA6-ACF0-F36B8909B8A4}
+LicenseFile=C:\Users\paul\OneDrive\Documents\dev\python-projects\SPBackup\LICENSE
 AppName={#MyAppName}
 AppVersion={#MyAppVersion}
 ;AppVerName={#MyAppName} {#MyAppVersion}
