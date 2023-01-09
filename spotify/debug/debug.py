@@ -62,9 +62,10 @@ def initialize():
     """
     try:
         os.makedirs(DEBUG_DIR)
-        intialize_filelogger()
     except OSError as err:
         print(f"Error creating {DEBUG_DIR} directory. Reason: {err.__str__()}")
+    finally:
+        intialize_filelogger()
 
     if os.path.exists(DEBUG_DATA_DIR):
         return

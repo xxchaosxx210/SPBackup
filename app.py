@@ -171,6 +171,12 @@ class SPBackupApp(wx.App):
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             asyncio.run(self.retrieve_playlists())
+        elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
+            # There was an issue with the Authorization response and HTTP parsing
+            State.set_token(None)
+            config.remove()
+            wx.CallAfter(self.destroy_auth_dialog)
+            logger.console(value, "error")
         elif status == RedirectListener.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
             # Prompt user to follow Url

@@ -62,6 +62,7 @@ class RedirectListener(threading.Thread):
     EVENT_TOKEN_RECIEVED = 1
     EVENT_REQUESTING_AUTHORIZATION = 2
     EVENT_SPOTIFY_ERROR = 3
+    EVENT_AUTHORIZATION_ERROR = 4
 
     def __init__(self, port, client_id, client_secret, app_name, mainthread_callback):
         super().__init__()
@@ -90,13 +91,21 @@ class RedirectListener(threading.Thread):
                         parsed_data = urlparse(http_response)
                         # Parse the query string of the received data into a dict 'code=our_code'
                         query: dict = parse_qs(parsed_data.query)
-                        string = query["code"][0]
+
+                        # force an error
+                        # query = {"give-me-an-error": None}
                         # check for code key in query dict
                         if not query.get("code", None) or len(query["code"]) < 1:
-                          # there is an issue
-                          self.callback(RedirectListener.EVENT_CODE_ERROR, f"Error: could not find Auth Code in HTTP response... {http_response}")
+                          # there is an issue could not find code as first element
+                          _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
+                          debug.file_log(_error_message, "error")
+                          self.callback(RedirectListener.EVENT_AUTHORIZATION_ERROR, _error_message)
                           self.stop_event.set()
-                          return
+                          break
+                        # another step required as the http contents are still in the query.
+                        # we will need to split the code from the rest of the http header.
+                        # good thing is the code is seperated by a space. so slice from the first space
+                        # in the string back to the first character. That should be our code
                         string = query["code"][0]
                         first_space = string.index(" ")
                         code = string[:first_space]
@@ -113,6 +122,8 @@ class RedirectListener(threading.Thread):
                   # Should be a network issue
                     debug.file_log(f"Error in RedirectListener reading from socket. {err.__str__()}", "error")
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
+        debug.file_log("HTTP Server thread is exiting", "info")      
+                
     
     def send_response(self, conn, html):
         # Set the response to an HTML page that says "Thank you"
