@@ -153,7 +153,7 @@ class SPBackupApp(wx.App):
             self.show_error(error.response_text)
             config.remove()
         else:
-            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)       
+            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
     
     def on_listener_response(self, status: str, value: any):
         """response from the RedirectListener
