@@ -201,7 +201,6 @@ class SPBackupApp(wx.App):
             wx.CallAfter(UI.statusbar.SetStatusText, error_message)
             wx.CallAfter(self.destroy_auth_dialog)
         
-
     def open_auth_dialog(self, url):
         self.auth_dialog = AuthDialog(self.frame, url)
         self.auth_dialog.ShowModal()
@@ -218,11 +217,7 @@ class SPBackupApp(wx.App):
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(
-                PORT, 
-                const.CLIENT_ID, 
-                const.CLIENT_SECRET,
-                config.APP_NAME,
-                self.on_listener_response)
+                config.APP_NAME, self.on_listener_response)
             self.listener.start()
     
     def show_error(self, message: str):

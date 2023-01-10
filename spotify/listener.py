@@ -1,9 +1,6 @@
 import threading
 import socket
-from urllib.parse import (
-  urlparse,
-  parse_qs
-)
+from urllib.parse import urlparse, parse_qs
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
 from spotify.net import await_on_sync_call
@@ -64,12 +61,9 @@ class RedirectListener(threading.Thread):
     EVENT_SPOTIFY_ERROR = 3
     EVENT_AUTHORIZATION_ERROR = 4
 
-    def __init__(self, port, client_id, client_secret, app_name, mainthread_callback):
+    def __init__(self, app_name, mainthread_callback):
         super().__init__()
-        self.port = port
         self.stop_event = threading.Event()
-        self.client_id = client_id
-        self.client_secret = client_secret
         self.callback = mainthread_callback
         self.app_name = app_name
 
@@ -77,7 +71,7 @@ class RedirectListener(threading.Thread):
         """Listen for a redirect on the specified port"""
         self.callback(RedirectListener.EVENT_REQUESTING_AUTHORIZATION, None)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.bind((HOST, self.port))
+            s.bind((HOST, PORT))
             s.listen()
             while not self.stop_event.is_set():
                 try:
@@ -96,12 +90,15 @@ class RedirectListener(threading.Thread):
                         # query = {"give-me-an-error": None}
                         # check for code key in query dict
                         if not query.get("code", None) or len(query["code"]) < 1:
-                          # there is an issue could not find code as first element
-                          _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
-                          debug.file_log(_error_message, "error")
-                          self.callback(RedirectListener.EVENT_AUTHORIZATION_ERROR, _error_message)
-                          self.stop_event.set()
-                          break
+                            # there is an issue could not find code as first element
+                            _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
+                            debug.file_log(_error_message, "error")
+                            self.callback(
+                                RedirectListener.EVENT_AUTHORIZATION_ERROR,
+                                _error_message,
+                            )
+                            self.stop_event.set()
+                            break
                         # another step required as the http contents are still in the query.
                         # we will need to split the code from the rest of the http header.
                         # good thing is the code is seperated by a space. so slice from the first space
@@ -111,26 +108,29 @@ class RedirectListener(threading.Thread):
                         code = string[:first_space]
                         try:
                             # send an async request to obtain the token
-                            token = await_on_sync_call(exchange_code_for_token, code=code)
+                            token = await_on_sync_call(
+                                exchange_code_for_token, code=code
+                            )
                             # all went well we should now have an auth token
                             self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
                         except SpotifyError as err:
                             self.callback(RedirectListener.EVENT_SPOTIFY_ERROR, err)
                         finally:
-                          self.stop_event.set()
+                            self.stop_event.set()
                 except socket.error as err:
-                  # Should be a network issue
-                    debug.file_log(f"Error in RedirectListener reading from socket. {err.__str__()}", "error")
+                    # Should be a network issue
+                    debug.file_log(
+                        f"Error in RedirectListener reading from socket. {err.__str__()}",
+                        "error",
+                    )
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
-        debug.file_log("HTTP Server thread is exiting", "info")      
-                
-    
+        debug.file_log("HTTP Server thread is exiting", "info")
+
     def send_response(self, conn, html):
         # Set the response to an HTML page that says "Thank you"
         response = f"HTTP/1.1 200 OK\nContent-Type: text/html\n\nUser-Agent: {self.app_name}\r\n\r\n"
         response += html
         conn.sendall(response.encode())
-
 
     def stop(self):
         """Stop the listener"""
