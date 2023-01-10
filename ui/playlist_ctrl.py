@@ -57,7 +57,10 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
 
+        self.EnableCheckBoxes(True)
+
         columns = (
+            "Select",
             "#",
             "Song",
             "Artist",
@@ -69,10 +72,11 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
             self.InsertColumn(index, column)
         
         self.SetColumnWidth(0, 50)
-        self.SetColumnWidth(1, 300)
-        self.SetColumnWidth(2, 200)
+        self.SetColumnWidth(1, 50)
+        self.SetColumnWidth(2, 300)
         self.SetColumnWidth(3, 200)
-        self.SetColumnWidth(4, 100)
+        self.SetColumnWidth(4, 200)
+        self.SetColumnWidth(5, 100)
 
         self.SetMinSize((100, 200))
         self.setResizeColumn(2)
@@ -89,8 +93,9 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.DeleteAllItems()
     
     def add_item(self, item_index: int, item: Item):
-        offset_index = State.get_playlist().tracks.offset + item_index + 1
-        row_index = self.InsertItem(index=item_index, label=str(offset_index))
+        row_index = self.InsertItem(index=item_index, label="")
+        select_item: wx.ListItem = self.GetItem(row_index, 0)
+        select_item.SetState(wx.LIST_STATE_SELECTED)
         def get_artist_name(_artist: Artist) -> str:
             """extract the name of the artists. Should be used in a map iteration function to iterate through the artists collaboration
 
@@ -102,8 +107,10 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
             """
             return _artist.name
         # Append artists
-        self.SetItem(row_index, 1, item.track_name)
+        offset_index = State.get_playlist().tracks.offset + item_index + 1
+        self.SetItem(row_index, 1, str(offset_index))
+        self.SetItem(row_index, 2, item.track_name)
         artist_string = " / ".join(map(get_artist_name, item.track_album.artists))
-        self.SetItem(row_index, 2, artist_string)
-        self.SetItem(row_index, 3, item.track_album.name)
-        self.SetItem(row_index, 4, item.added_at)
+        self.SetItem(row_index, 3, artist_string)
+        self.SetItem(row_index, 4, item.track_album.name)
+        self.SetItem(row_index, 5, item.added_at)

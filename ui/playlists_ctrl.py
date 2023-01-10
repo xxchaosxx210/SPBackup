@@ -91,7 +91,6 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     
     def add_playlist(self, index, playlist: PlaylistsItem):
         self.InsertItem(index, "", index)
-        wx.LIST_STATE_SELECTED
         item: wx.ListItem = self.GetItem(index, 0)
         item.SetState(wx.LIST_STATE_SELECTED)
         # self.SetItemState(index, wx.LIST_STATE_CHECKED, wx.LIST_STATE_CHECKED)
