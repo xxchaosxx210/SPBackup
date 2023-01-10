@@ -52,20 +52,24 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
 
-        self.InsertColumn(0, "Name")
-        self.InsertColumn(1, "Description")
-        self.InsertColumn(2, "Created by")
-        self.InsertColumn(3, "ID")
-        self.InsertColumn(4, "Tracks amount")
+        self.EnableCheckBoxes(True)
+
+        self.InsertColumn(0, "Select")
+        self.InsertColumn(1, "Name")
+        self.InsertColumn(2, "Description")
+        self.InsertColumn(3, "Created by")
+        self.InsertColumn(4, "ID")
+        self.InsertColumn(5, "Tracks amount")
         
         # Set the minimum size of the widget
         self.SetMinSize((100, 200))
 
-        self.SetColumnWidth(0, 200)
-        self.SetColumnWidth(1, wx.LIST_AUTOSIZE)
+        self.SetColumnWidth(0, 100)
+        self.SetColumnWidth(1, 200)
         self.SetColumnWidth(2, 100)
-        self.SetColumnWidth(3, 100)
+        self.SetColumnWidth(3, wx.LIST_AUTOSIZE)
         self.SetColumnWidth(4, 100)
+        self.SetColumnWidth(5, 100)
 
         self.setResizeColumn(2)
 
@@ -86,11 +90,16 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.DeleteAllItems()
     
     def add_playlist(self, index, playlist: PlaylistsItem):
-        self.InsertItem(index, playlist.name, index)
-        self.SetItem(index, 1, playlist.description)
-        self.SetItem(index, 2, playlist.owner.display_name)
-        self.SetItem(index, 3, str(playlist.id))
-        self.SetItem(index, 4, str(playlist.tracks.total))
+        self.InsertItem(index, "", index)
+        wx.LIST_STATE_SELECTED
+        item: wx.ListItem = self.GetItem(index, 0)
+        item.SetState(wx.LIST_STATE_SELECTED)
+        # self.SetItemState(index, wx.LIST_STATE_CHECKED, wx.LIST_STATE_CHECKED)
+        self.SetItem(index, 1, playlist.name)
+        self.SetItem(index, 2, playlist.description)
+        self.SetItem(index, 3, playlist.owner.display_name)
+        self.SetItem(index, 4, str(playlist.id))
+        self.SetItem(index, 5, str(playlist.tracks.total))
 
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
