@@ -126,7 +126,7 @@ async def exchange_code_for_token(code: str) -> str:
 
 
 async def get_playlists(
-    token: str, url: str = "", offset: int = 0, limit: int = 5
+    token: str, url: str = "", offset: int = 0, limit: int = 50
 ) -> dict:
     headers = create_auth_token_header(token)
     params = {}

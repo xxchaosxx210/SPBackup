@@ -14,6 +14,6 @@ class PlaylistSplitterWindow(wx.SplitterWindow):
 
         self.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
 
-        UI.playlists_ctrl.SetMinSize((-1, 100))
-        UI.playlistinfo_ctrl.SetMinSize((-1, 100))
+        UI.playlists_ctrl.SetMinSize((-1, -1))
+        UI.playlistinfo_ctrl.SetMinSize((-1, -1))
 
