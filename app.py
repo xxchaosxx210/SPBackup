@@ -10,13 +10,7 @@ from ui.dialogs.user import show_user_info_dialog
 import globals.config as config
 
 from spotify.listener import RedirectListener
-from spotify.listener import PORT
-from spotify.net import authorize
-from spotify.net import get_playlists
-from spotify.net import get_user_info
-from spotify.net import get_playlist
-from spotify.net import get_tracks_from_url
-from spotify.net import SpotifyError
+import spotify.net
 from spotify.validators.playlist_info import PlaylistInfo
 import spotify.const as const
 
@@ -77,8 +71,8 @@ class SPBackupApp(wx.App):
         """sends a get user playlist request and loads the Playlists listctrl if successful
         """
         try:
-            playlists = await get_playlists(State.get_token())
-        except SpotifyError as err:
+            playlists = await spotify.net.get_playlists(State.get_token())
+        except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
             return
         State.set_playlists(playlists)
@@ -89,9 +83,9 @@ class SPBackupApp(wx.App):
         """sends a user information request and opens a dialog with user details
         """
         try:
-            response = await get_user_info(State.get_token())
+            response = await spotify.net.get_user_info(State.get_token())
             wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
-        except SpotifyError as err:
+        except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
     
     async def retrieve_playlist(self, playlist_id: int):
@@ -102,11 +96,11 @@ class SPBackupApp(wx.App):
             playlist_id (int): the ID of the playlist too recieve
         """
         try:
-            playlist: PlaylistInfo = await get_playlist(State.get_token(), playlist_id)
+            playlist: PlaylistInfo = await spotify.net.get_playlist(State.get_token(), playlist_id)
             State.set_playlist(playlist)
             wx.CallAfter(
                 UI.playlistinfo_ctrl.populate)
-        except SpotifyError as err:
+        except spotify.net.SpotifyError as err:
             State.set_playlist(None)
             self.handle_spotify_error(error=err)
 
@@ -118,10 +112,10 @@ class SPBackupApp(wx.App):
             url (str): the url to follow. found in State.playlistinfo.tracks
         """
         try:
-            tracks = await get_tracks_from_url(State.get_token(), url)
+            tracks = await spotify.net.get_tracks_from_url(State.get_token(), url)
             State.update_playlist_tracks(tracks)
             wx.CallAfter(UI.playlistinfo_ctrl.populate)
-        except SpotifyError as err:
+        except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
 
     async def retrieve_playlist_items(self, url: str):
@@ -132,13 +126,13 @@ class SPBackupApp(wx.App):
             url (str): the url to follow next
         """
         try:
-            playlists = await get_playlists(token=State.get_token(), url=url)
-        except SpotifyError as err:
+            playlists = await spotify.net.get_playlists(token=State.get_token(), url=url)
+        except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
         State.set_playlists(playlists)
         wx.CallAfter(UI.playlists_ctrl.populate)
     
-    def handle_spotify_error(self, error: SpotifyError):
+    def handle_spotify_error(self, error: spotify.net.SpotifyError):
         """handle the error status codes recieved from Spotify
 
         Args:
@@ -182,7 +176,7 @@ class SPBackupApp(wx.App):
             # Prompt user to follow Url
             logger.console("Response from RedirectListener: Requesting Authorization...", "info")
             loop = asyncio.new_event_loop()
-            url = loop.run_until_complete(authorize((
+            url = loop.run_until_complete(spotify.net.authorize((
                 const.PLAYLIST_MODIFY_PUBLIC,
                 const.PLAYLIST_MODIFY_PRIVATE,
                 const.PLAYLIST_READ_COLLABORATIVE,
