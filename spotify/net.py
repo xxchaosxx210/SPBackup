@@ -1,6 +1,7 @@
 import aiohttp
 import logging
 import asyncio
+
 import spotify.const as const
 from spotify.validators.tracks import Tracks
 from spotify.validators.user import User
@@ -23,15 +24,15 @@ def create_auth_header():
     return {"Authorization": f'Basic {const.AUTH_HEADER.decode("utf-8")}'}
 
 
-def create_auth_token_header(token) -> dict:
+def create_auth_token_header(token: str) -> dict:
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
-def await_on_sync_call(func_to_wait_on, **kwargs) -> any:
-    """for synchronous calls to the spotify api
+def await_on_sync_call(func_to_wait_on: any, **kwargs) -> any:
+    """for synchronous calls to the spotify api. Note that this will have blocking behaviour!!
 
     Args:
-        func_to_wait_on (_type_): Python function
+        func_to_wait_on (_type_): one of the async functions to be called and blocked
         **kwargs: keyword arguments to be passed into the func_to_wait_on
 
     Returns:
@@ -75,7 +76,7 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
         )
 
 
-async def authorize(scopes: tuple):
+async def authorize(scopes: tuple) -> str:
     """authorize(scopes)
 
     Args:
@@ -125,8 +126,7 @@ async def exchange_code_for_token(code: str) -> str:
 
 
 async def get_playlists(
-    token: str, url: str = "", offset: int = 0, limit: int = 50
-) -> dict:
+    token: str, url: str = "", offset: int = 0, limit: int = 50) -> dict:
     headers = create_auth_token_header(token)
     params = {}
     if not url:

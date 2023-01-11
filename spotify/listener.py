@@ -1,9 +1,8 @@
 import threading
 import socket
-from urllib.parse import urlparse, parse_qs
-from spotify.net import exchange_code_for_token
-from spotify.net import SpotifyError
-from spotify.net import await_on_sync_call
+import urllib.parse
+
+import spotify.net
 from spotify import debugging
 
 PORT = 3000
@@ -82,9 +81,9 @@ class RedirectListener(threading.Thread):
                         # recieve the code (Hopefully)
                         http_response = conn.recv(1024).decode()
                         # defragment the headers
-                        parsed_data = urlparse(http_response)
+                        parsed_data = urllib.parse.urlparse(http_response)
                         # Parse the query string of the received data into a dict 'code=our_code'
-                        query: dict = parse_qs(parsed_data.query)
+                        query: dict = urllib.parse.parse_qs(parsed_data.query)
 
                         # force an error
                         # query = {"give-me-an-error": None}
@@ -108,12 +107,12 @@ class RedirectListener(threading.Thread):
                         code = string[:first_space]
                         try:
                             # send an async request to obtain the token
-                            token = await_on_sync_call(
-                                exchange_code_for_token, code=code
+                            token = spotify.net.await_on_sync_call(
+                                spotify.net.exchange_code_for_token, code=code
                             )
                             # all went well we should now have an auth token
                             self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
-                        except SpotifyError as err:
+                        except spotify.net.SpotifyError as err:
                             self.callback(RedirectListener.EVENT_SPOTIFY_ERROR, err)
                         finally:
                             self.stop_event.set()
