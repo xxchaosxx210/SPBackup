@@ -1,19 +1,19 @@
 import json
 import os
 # use the debug Data paths already set and created
-from spotify.debug import debug
+import spotify.debugging
 
 APP_NAME = "SPBackup"
 APP_VERSION = 1.0
 APP_AUTHOR = "Paul Millar"
 
-TOKEN_PATH = os.path.join(debug.APP_SETTINGS_DIR, ".token.json")
+TOKEN_PATH = os.path.join(spotify.debugging.APP_SETTINGS_DIR, ".token.json")
 
 def check_data_dir_exists():
     """checks the data path exists if doesnt then dir will be created
     """
-    if not os.path.exists(debug.APP_DATA_DIR):
-        os.makedirs(debug.APP_DATA_DIR)
+    if not os.path.exists(spotify.debugging.APP_DATA_DIR):
+        os.makedirs(spotify.debugging.APP_DATA_DIR)
 
 def save(token: str, path: str = TOKEN_PATH):
     check_data_dir_exists()

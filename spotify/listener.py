@@ -4,7 +4,7 @@ from urllib.parse import urlparse, parse_qs
 from spotify.net import exchange_code_for_token
 from spotify.net import SpotifyError
 from spotify.net import await_on_sync_call
-from spotify.debug import debug
+from spotify import debugging
 
 PORT = 3000
 HOST = "localhost"
@@ -92,7 +92,7 @@ class RedirectListener(threading.Thread):
                         if not query.get("code", None) or len(query["code"]) < 1:
                             # there is an issue could not find code as first element
                             _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
-                            debug.file_log(_error_message, "error")
+                            debugging.file_log(_error_message, "error")
                             self.callback(
                                 RedirectListener.EVENT_AUTHORIZATION_ERROR,
                                 _error_message,
@@ -119,12 +119,12 @@ class RedirectListener(threading.Thread):
                             self.stop_event.set()
                 except socket.error as err:
                     # Should be a network issue
-                    debug.file_log(
+                    debugging.file_log(
                         f"Error in RedirectListener reading from socket. {err.__str__()}",
                         "error",
                     )
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
-        debug.file_log("HTTP Server thread is exiting", "info")
+        debugging.file_log("HTTP Server thread is exiting", "info")
 
     def send_response(self, conn, html):
         # Set the response to an HTML page that says "Thank you"

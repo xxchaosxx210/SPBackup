@@ -8,7 +8,6 @@ from spotify.validators.playlist_info import PlaylistInfo
 from spotify.validators.playlist_info import Tracks
 from spotify.validators.playlists import Playlists
 
-from spotify.debug import debug
 
 logger = logging.getLogger()
 

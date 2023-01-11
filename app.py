@@ -5,17 +5,17 @@ import argparse
 
 from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
-from ui.dialogs.user import show_user_info_dialog
+import ui.dialogs.user
 
-import globals.config as config
+import globals.config
+import spotify.const
+import spotify.net
+import spotify.debug
 
 from spotify.listener import RedirectListener
-import spotify.net
 from spotify.validators.playlist_info import PlaylistInfo
-import spotify.const as const
 
-from spotify.debug import debug as spotify_debug
-import globals.logger as logger
+import globals.logger
 from globals.state import (
     State,
     UI
@@ -49,7 +49,7 @@ class SPBackupApp(wx.App):
     def reauthenticate(self):
         self.reset()
         # remove the token
-        config.remove()
+        globals.config.remove()
         # rerun the process of authentication
         self.run_background_auth_check()
 
@@ -58,13 +58,13 @@ class SPBackupApp(wx.App):
         else will try and load users playlists and store the global token. 
         """
         # load the token from our .token.json file
-        token = config.load()["token"]
+        token = globals.config.load()["token"]
         State.set_token(token)
         if not token:
-            logger.console("No Token found. Requesting Authorization...", "info")
+            globals.logger.console("No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
         else:
-            logger.console("Token found. Retrieving Playlists from User...", "info")
+            globals.logger.console("Token found. Retrieving Playlists from User...", "info")
             asyncio.run(self.retrieve_playlists())
     
     async def retrieve_playlists(self):
@@ -84,7 +84,9 @@ class SPBackupApp(wx.App):
         """
         try:
             response = await spotify.net.get_user_info(State.get_token())
-            wx.CallAfter(show_user_info_dialog, parent=self.frame, userinfo=response)
+            # create a dialog with the User information
+            wx.CallAfter(
+                ui.dialogs.user.create_dialog, parent=self.frame, userinfo=response)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
     
@@ -138,14 +140,14 @@ class SPBackupApp(wx.App):
         Args:
             error (SpotifyError): exceptioon object
         """
-        if error.code == const.STATUS_BAD_TOKEN:
+        if error.code == spotify.const.STATUS_BAD_TOKEN:
             # bad token ask for a re-authorize request from the user
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)
-            config.remove()
+            globals.config.remove()
             self.start_listening_for_redirect()
-        elif error.code == const.STATUS_BAD_OAUTH_REQUEST:
+        elif error.code == spotify.const.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
-            config.remove()
+            globals.config.remove()
         else:
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
     
@@ -159,39 +161,39 @@ class SPBackupApp(wx.App):
         if status == RedirectListener.EVENT_TOKEN_RECIEVED:
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
-            config.save(value)
+            globals.config.save(value)
             State.set_token(value)
-            logger.console("Response from RedirectListener: Token recieved and saved", "info")
+            globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             asyncio.run(self.retrieve_playlists())
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             State.set_token(None)
-            config.remove()
+            globals.config.remove()
             wx.CallAfter(self.destroy_auth_dialog)
-            logger.console(value, "error")
+            globals.logger.console(value, "error")
         elif status == RedirectListener.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
             # Prompt user to follow Url
-            logger.console("Response from RedirectListener: Requesting Authorization...", "info")
+            globals.logger.console("Response from RedirectListener: Requesting Authorization...", "info")
             loop = asyncio.new_event_loop()
             url = loop.run_until_complete(spotify.net.authorize((
-                const.PLAYLIST_MODIFY_PUBLIC,
-                const.PLAYLIST_MODIFY_PRIVATE,
-                const.PLAYLIST_READ_COLLABORATIVE,
-                const.PLAYLIST_READ_PRIVATE
+                spotify.const.PLAYLIST_MODIFY_PUBLIC,
+                spotify.const.PLAYLIST_MODIFY_PRIVATE,
+                spotify.const.PLAYLIST_READ_COLLABORATIVE,
+                spotify.const.PLAYLIST_READ_PRIVATE
             )))
             wx.CallAfter(self.open_auth_dialog, url=url)
         ## Error handling
         # usually a auth error
         elif status == RedirectListener.EVENT_SPOTIFY_ERROR:
-            logger.console(f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
+            globals.logger.console(f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
             wx.CallAfter(UI.statusbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
         elif status == RedirectListener.EVENT_SOCKET_ERROR:
             error_message = f"Response from RedirectListener: Socket Error, Check the debug.log for more details. {value.__str__()}"
-            logger.console(error_message, "error")
+            globals.logger.console(error_message, "error")
             wx.CallAfter(UI.statusbar.SetStatusText, error_message)
             wx.CallAfter(self.destroy_auth_dialog)
         
@@ -211,7 +213,7 @@ class SPBackupApp(wx.App):
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(
-                config.APP_NAME, self.on_listener_response)
+                globals.config.APP_NAME, self.on_listener_response)
             self.listener.start()
     
     def show_error(self, message: str):
@@ -242,18 +244,20 @@ def run_app():
 
     # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
-    spotify_debug.DEBUG = add_args()
-    if spotify_debug.DEBUG:
+    spotify.debugging.DEBUG = add_args()
+    if spotify.debugging.DEBUG:
         # setup our spotify debugging if arguments are set to true
-        spotify_debug.initialize()
+        spotify.debugging.initialize()
 
     # create our logger APP
-    logger.setup_logger()
+    globals.logger.setup_logger()
 
     multiprocessing.freeze_support()
     spbackup_app = SPBackupApp()
     frame = MainFrame(
-        app=spbackup_app, parent=None, title=f"{config.APP_NAME} v{config.APP_VERSION} - coded by {config.APP_AUTHOR}"
+        app=spbackup_app, 
+        parent=None, 
+        title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}"
     )
     frame.Show()
     spbackup_app.frame = frame

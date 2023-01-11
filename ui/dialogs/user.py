@@ -55,7 +55,7 @@ class UserDialog(wx.Dialog):
         self.Close()
         
 
-def show_user_info_dialog(parent, userinfo):
+def create_dialog(parent, userinfo):
     dlg = UserDialog(parent, userinfo)
     dlg.ShowModal()
     dlg.Destroy()
