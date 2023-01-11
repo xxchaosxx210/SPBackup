@@ -9,7 +9,8 @@ COLOUR_SPOTIFY_GREEN = "#1DB954"
 # font used by Spotify
 # FONT_SPOTIFY = wx.Font(16, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
 
-def create_spotify_button(parent, label="", font_size=12):
+def create_spotify_button(
+    parent: wx.Panel, label: str = "", font_size: int = 12) -> wx.Button:
     # Create a button
     button: GenButton = GenButton(parent, label=label)
 
@@ -30,10 +31,21 @@ def create_spotify_button(parent, label="", font_size=12):
     # Return the button
     return button
 
-def create_spotify_static_text(parent, label, font_size: 12):
-    label: wx.StaticText = wx.StaticText(parent, -1, label=label)
-    label.SetForegroundColour(COLOUR_SPOTIFY_TEXT)
+def create_spotify_static_text(
+    parent: wx.Panel, label: str = "", font_size: int = 12) -> wx.StaticText:
+    """creates a spotify styled statictext
+
+    Args:
+        parent (wx.Panel): _description_
+        label (str, optional): _description_. Defaults to "".
+        font_size (int, optional): _description_. Defaults to 12.
+
+    Returns:
+        wx.StaticText: _description_
+    """
+    static_text: wx.StaticText = wx.StaticText(parent, -1, label=label)
+    static_text.SetForegroundColour(COLOUR_SPOTIFY_TEXT)
     font: wx.Font = label.GetFont()
     font.SetPointSize(font_size)
-    label.SetFont(font)
-    return label
+    static_text.SetFont(font)
+    return static_text

@@ -1,4 +1,6 @@
 import threading
+import wx
+
 from spotify.validators.playlist_info import PlaylistInfo
 from spotify.validators.playlist_info import Tracks
 from spotify.validators.playlists import Playlists
@@ -8,21 +10,22 @@ class UI:
 
     # store our wxcontrols
 
-    playlists_ctrl = None
-    playlistinfo_ctrl = None
-    playlists_toolbar = None
-    playlistinfo_toolbar = None
-    playlists_spw = None
-    statusbar = None
+    main_frame: wx.Frame = None
+    playlists_ctrl: wx.ListCtrl = None
+    playlistinfo_ctrl: wx.ListCtrl = None
+    playlists_toolbar: wx.Panel = None
+    playlistinfo_toolbar: wx.Panel = None
+    playlists_spw: wx.SplitterWindow = None
+    statusbar: wx.StatusBar = None
 
 
 class State:
 
-    # holds general global state
+    # holds general global state thread safe
 
     _token: str = None
     _playlist: PlaylistInfo = None 
-    _lock = threading.Lock()
+    _lock: threading.Lock = threading.Lock()
     _playlists: Playlists = None
 
     @staticmethod

@@ -1,6 +1,7 @@
 import threading
 import socket
 import urllib.parse
+from typing import Callable
 
 import spotify.net
 from spotify import debugging
@@ -60,14 +61,24 @@ class RedirectListener(threading.Thread):
     EVENT_SPOTIFY_ERROR = 3
     EVENT_AUTHORIZATION_ERROR = 4
 
-    def __init__(self, app_name, mainthread_callback):
+    def __init__(self, app_name: str, mainthread_callback: Callable[[int], any]):
+        """constructor
+
+        Args:
+            app_name (str): the app name to be added to the User-Agent header
+            mainthread_callback (function): the function callback the caller should take
+            parameters of state: str and value: any doesnt require a return value
+        """
         super().__init__()
         self.stop_event = threading.Event()
         self.callback = mainthread_callback
         self.app_name = app_name
 
     def run(self):
-        """Listen for a redirect on the specified port"""
+        """listen on a localhost waits for a redirect link and sends a token to callback if successful
+        change the HOST and PORT constants in the spotify.const module to change the host and port address
+        Note: That this is for testing only!!!
+        """
         self.callback(RedirectListener.EVENT_REQUESTING_AUTHORIZATION, None)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
@@ -125,7 +136,7 @@ class RedirectListener(threading.Thread):
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
         debugging.file_log("HTTP Server thread is exiting", "info")
 
-    def send_response(self, conn, html):
+    def send_response(self, conn: socket.socket, html: str):
         # Set the response to an HTML page that says "Thank you"
         response = f"HTTP/1.1 200 OK\nContent-Type: text/html\n\nUser-Agent: {self.app_name}\r\n\r\n"
         response += html

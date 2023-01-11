@@ -11,9 +11,12 @@ import globals.config
 import spotify.const
 import spotify.net
 import spotify.debug
+from spotify.validators.playlists import Playlists as SpotifyPlaylists
+from spotify.validators.playlist_info import PlaylistInfo as SpotifyPlaylistInfo
+from spotify.validators.user import User as SpotifyUser
+from spotify.validators.playlist_info import Tracks
 
 from spotify.listener import RedirectListener
-from spotify.validators.playlist_info import PlaylistInfo
 
 import globals.logger
 from globals.state import (
@@ -23,15 +26,6 @@ from globals.state import (
 
 
 class SPBackupApp(wx.App):
-
-    NAME = "SPBackup"
-
-    def __init__(self, redirect=False, filename=None, useBestVisual=False, clearSigInt=True):
-        super().__init__(redirect, filename, useBestVisual, clearSigInt)
-        self.frame = None
-    
-    def OnInit(self):
-        return super().OnInit()
 
     def reset(self):
         """cleans up the UI and resets the global state for the Playlists
@@ -47,6 +41,9 @@ class SPBackupApp(wx.App):
         UI.playlists_ctrl.DeleteAllItems()
 
     def reauthenticate(self):
+        """restarts the authentication process again
+        gets called when user presses the menuitem re-authenticate
+        """
         self.reset()
         # remove the token
         globals.config.remove()
@@ -58,7 +55,7 @@ class SPBackupApp(wx.App):
         else will try and load users playlists and store the global token. 
         """
         # load the token from our .token.json file
-        token = globals.config.load()["token"]
+        token: str = globals.config.load()["token"]
         State.set_token(token)
         if not token:
             globals.logger.console("No Token found. Requesting Authorization...", "info")
@@ -71,7 +68,7 @@ class SPBackupApp(wx.App):
         """sends a get user playlist request and loads the Playlists listctrl if successful
         """
         try:
-            playlists = await spotify.net.get_playlists(State.get_token())
+            playlists: SpotifyPlaylists = await spotify.net.get_playlists(State.get_token())
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
             return
@@ -83,10 +80,10 @@ class SPBackupApp(wx.App):
         """sends a user information request and opens a dialog with user details
         """
         try:
-            response = await spotify.net.get_user_info(State.get_token())
+            user: SpotifyUser = await spotify.net.get_user_info(State.get_token())
             # create a dialog with the User information
             wx.CallAfter(
-                ui.dialogs.user.create_dialog, parent=self.frame, userinfo=response)
+                ui.dialogs.user.create_dialog, parent=UI.main_frame, userinfo=user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
     
@@ -98,7 +95,7 @@ class SPBackupApp(wx.App):
             playlist_id (int): the ID of the playlist too recieve
         """
         try:
-            playlist: PlaylistInfo = await spotify.net.get_playlist(State.get_token(), playlist_id)
+            playlist: SpotifyPlaylistInfo = await spotify.net.get_playlist(State.get_token(), playlist_id)
             State.set_playlist(playlist)
             wx.CallAfter(
                 UI.playlistinfo_ctrl.populate)
@@ -114,21 +111,21 @@ class SPBackupApp(wx.App):
             url (str): the url to follow. found in State.playlistinfo.tracks
         """
         try:
-            tracks = await spotify.net.get_tracks_from_url(State.get_token(), url)
+            tracks: Tracks = await spotify.net.get_tracks_from_url(State.get_token(), url)
             State.update_playlist_tracks(tracks)
             wx.CallAfter(UI.playlistinfo_ctrl.populate)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
 
     async def retrieve_playlist_items(self, url: str):
-        """requests foor the next or previous url found in the playlists.next or playlists.previous properties.
-        called when the User presses on the next or previous button
+        """requests for the next or previous url found in the playlists.next or playlists.previous properties.
+        called when the User presses on the next or previous button. For pagination if more usbers playlists exceed spotify maximum limit
 
         Args:
             url (str): the url to follow next
         """
         try:
-            playlists = await spotify.net.get_playlists(token=State.get_token(), url=url)
+            playlists: SpotifyPlaylists = await spotify.net.get_playlists(token=State.get_token(), url=url)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
         State.set_playlists(playlists)
@@ -151,7 +148,7 @@ class SPBackupApp(wx.App):
         else:
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
     
-    def on_listener_response(self, status: str, value: any):
+    def on_listener_response(self, status: int, value: any):
         """response from the RedirectListener
 
         Args:
@@ -198,7 +195,7 @@ class SPBackupApp(wx.App):
             wx.CallAfter(self.destroy_auth_dialog)
         
     def open_auth_dialog(self, url):
-        self.auth_dialog = AuthDialog(self.frame, url)
+        self.auth_dialog = AuthDialog(UI.main_frame, url)
         self.auth_dialog.ShowModal()
     
     def destroy_auth_dialog(self):
@@ -223,7 +220,7 @@ class SPBackupApp(wx.App):
             message (str): anything you like
         """
         # Create the message dialog
-        dlg = wx.MessageDialog(self.frame, message, "Error", wx.OK | wx.ICON_ERROR)
+        dlg = wx.MessageDialog(UI.main_frame, message, "Error", wx.OK | wx.ICON_ERROR)
         # Show the dialog and wait for the user to click "OK"
         dlg.ShowModal()
         # Destroy the dialog
@@ -253,16 +250,14 @@ def run_app():
     globals.logger.setup_logger()
 
     multiprocessing.freeze_support()
-    spbackup_app = SPBackupApp()
-    frame = MainFrame(
-        app=spbackup_app, 
+    app = SPBackupApp()
+    UI.main_frame = MainFrame(
+        app=app, 
         parent=None, 
-        title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}"
-    )
-    frame.Show()
-    spbackup_app.frame = frame
-    spbackup_app.run_background_auth_check()
-    spbackup_app.MainLoop()
+        title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}")
+    UI.main_frame.Show()
+    app.run_background_auth_check()
+    app.MainLoop()
 
 if __name__ == '__main__':
     run_app()

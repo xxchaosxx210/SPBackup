@@ -76,7 +76,7 @@ class MainFrame(wx.Frame):
         # Set the frame's menu bar
         self.SetMenuBar(menu_bar)
     
-    def on_about_menu(self, evt):
+    def on_about_menu(self, evt: wx.CommandEvent):
         dlg = BubbleDialog(self, -1, "SPBackup", [
             "Spotify Backup", "Coded by Paul Millar", "Beta tested by Conor Moore",
             "version 1.0b", "09-01-2023"
@@ -84,15 +84,15 @@ class MainFrame(wx.Frame):
         dlg.ShowModal()
         dlg.Destroy()
 
-    def on_details(self, event):
+    def on_details(self, event: wx.CommandEvent):
         """Event handler for the Details menu item."""
         asyncio.run(self.app.retrieve_user_info())
 
-    def on_reauth(self, event):
+    def on_reauth(self, event: wx.CommandEvent):
         """Event handler for the Re-authorize menu item."""
         self.app.reauthenticate()
     
-    def toggle_hide_playlists(self, evt):
+    def toggle_hide_playlists(self, evt: wx.CommandEvent):
         menu: wx.Menu = evt.GetEventObject()
         # make sure the other window isnt split
         if self.hide_tracks_menuitem.IsChecked():
@@ -107,7 +107,7 @@ class MainFrame(wx.Frame):
             UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
             UI.playlists_ctrl.Enable()
     
-    def toggle_hide_tracks(self, evt):
+    def toggle_hide_tracks(self, evt: wx.CommandEvent):
         menu: wx.Menu = evt.GetEventObject()
         if self.hide_playlists_menuitem.IsChecked():
             # uncheck this menuitem and return do nothing

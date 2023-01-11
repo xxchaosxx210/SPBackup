@@ -1,9 +1,11 @@
 import wx
 import ui.style as style
 
+from spotify.validators.user import User
+
 
 class UserDialog(wx.Dialog):
-    def __init__(self, parent, user):
+    def __init__(self, parent: any, user: User):
         super().__init__(parent, title="User Information")
 
         # Get the parent size
@@ -14,7 +16,7 @@ class UserDialog(wx.Dialog):
 
         # Center the dialog to the parent
         self.CenterOnParent()
-
+        
         # Set the dialog background color
         self.SetBackgroundColour(style.COLOUR_SPOTIFY_BACKGROUND)
 
@@ -55,7 +57,7 @@ class UserDialog(wx.Dialog):
         self.Close()
         
 
-def create_dialog(parent, userinfo):
+def create_dialog(parent: any, userinfo: User):
     dlg = UserDialog(parent, userinfo)
     dlg.ShowModal()
     dlg.Destroy()

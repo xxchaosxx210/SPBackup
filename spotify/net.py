@@ -25,6 +25,14 @@ def create_auth_header():
 
 
 def create_auth_token_header(token: str) -> dict:
+    """
+
+    Args:
+        token (str): the authenticating token to add
+
+    Returns:
+        dict: returns the constructed Authorization header dict
+    """
     return {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 
@@ -126,7 +134,18 @@ async def exchange_code_for_token(code: str) -> str:
 
 
 async def get_playlists(
-    token: str, url: str = "", offset: int = 0, limit: int = 50) -> dict:
+    token: str, url: str = "", offset: int = 0, limit: int = 5) -> Playlists:
+    """requests playlists from the user account.
+
+    Args:
+        token (str): _description_
+        url (str, optional): the url to follow. If url is empty then offset and limit is used as params
+        offset (int, optional): the current offset for the playlists
+        limit (int, optional): limit cannot exceed 50. defaults to 5 for testing
+
+    Returns:
+        Playlists: the Playlists object. Check spotify.validators.playlists for details
+    """
     headers = create_auth_token_header(token)
     params = {}
     if not url:
@@ -142,6 +161,14 @@ async def get_playlists(
 
 
 async def get_user_info(token: str) -> User:
+    """gets the Users details from the Spotify API
+
+    Args:
+        token (str): the authenticating token
+
+    Returns:
+        User: the User object. check spotify.validators.user.User for details
+    """
     # Set the authorization header
     headers = create_auth_token_header(token)
 
@@ -157,7 +184,7 @@ async def get_user_info(token: str) -> User:
             return User(**json_response)
 
 
-async def get_playlist(access_token: str, playlist_id: str) -> dict:
+async def get_playlist(access_token: str, playlist_id: str) -> PlaylistInfo:
     """Retrieve a playlist from the Spotify API
 
     Args:
@@ -165,7 +192,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
         playlist_id (str): The Spotify ID of the playlist
 
     Returns:
-        dict: A dictionary containing the playlist information
+        PlaylistInfo: check the spotify.validators.playlist_info.PlaylistInfo class for details
     """
     headers = create_auth_token_header(access_token)
     # the fields what we want returned you add more later check the spotify.validators.playlist_info file for the classnames and properties returned
@@ -185,7 +212,18 @@ async def get_playlist(access_token: str, playlist_id: str) -> dict:
             raise_spotify_exception(response)
 
 
-async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100):
+async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) -> Tracks:
+    """gets the users playlist tracks
+
+    Args:
+        access_token (_type_): the users authentication token
+        playlist_id (_type_): 
+        offset (int, optional): Specifies the first track and is used with the limit to paginate the return tracks. Defaults to 0.
+        limit (int, optional): the amount of tracks to return (Max=100). Defaults to 100.
+
+    Returns:
+        Tracks: check the spotify.validators.playlist_info.Tracks class for details
+    """
     params = {"offset": offset, "limit": limit}
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
@@ -193,12 +231,25 @@ async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100):
             const.URI_PLAYLIST_TRACKS(playlist_id), headers, params=params
         ) as response:
             if response.status == const.STATUS_OK:
-                data = await response.json()
-                return data
+                tracks = await response.json()
+                return Tracks(**tracks)
             raise_spotify_exception(response)
 
 
-async def get_tracks_from_url(access_token: str, url: str):
+async def get_tracks_from_url(access_token: str, url: str) -> Tracks:
+    """retrieve tracks from the exact URL. Used in conjuction with get_playlist
+    as PlaylistInfo.Tracks contains next and prev links to tracks from the playlist
+    remember that as of the current time of writing this library that Spotify limits
+    tracks request by 100 so if users playlist has more than 100 tracks in it then
+    pagination is required
+
+    Args:
+        access_token (str):
+        url (str): the tracks url to follow
+
+    Returns:
+        Tracks: check the spotify.validators.playlist_info.Tracks for details
+    """
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:

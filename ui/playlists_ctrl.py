@@ -20,14 +20,14 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         self.prev_button.Disable() if not playlists or not playlists.previous \
             else self.prev_button.Enable(True)
 
-    def on_prev_button(self, event):
+    def on_prev_button(self, event: wx.CommandEvent):
         playlists = State.get_playlists()
         if not playlists or not playlists.previous:
             return
         app = wx.GetApp()
         asyncio.run(app.retrieve_playlist_items(playlists.previous))
 
-    def on_next_button(self, event):
+    def on_next_button(self, event: wx.CommandEvent):
         playlists = State.get_playlists()
         if not playlists or not playlists.next:
             return
