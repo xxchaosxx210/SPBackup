@@ -18,6 +18,8 @@ from spotify.validators.playlist_info import Tracks
 
 from spotify.listener import RedirectListener
 
+import playlist_manager
+
 import globals.logger
 from globals.state import (
     State,
@@ -62,13 +64,18 @@ class SPBackupApp(wx.App):
             self.start_listening_for_redirect()
         else:
             globals.logger.console("Token found. Retrieving Playlists from User...", "info")
-            asyncio.run(self.retrieve_playlists())
+            asyncio.run(self.retrieve_user_and_playlists(token))
     
-    async def retrieve_playlists(self):
+    async def retrieve_user_and_playlists(self, token: str):
+        await self.retrieve_playlists(token)
+        user = await spotify.net.get_user_info(token)
+        await State.playlist_manager.create_user(user)
+    
+    async def retrieve_playlists(self, token: str):
         """sends a get user playlist request and loads the Playlists listctrl if successful
         """
         try:
-            playlists: SpotifyPlaylists = await spotify.net.get_playlists(State.get_token())
+            playlists: SpotifyPlaylists = await spotify.net.get_playlists(token)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
             return
@@ -163,7 +170,7 @@ class SPBackupApp(wx.App):
             globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
-            asyncio.run(self.retrieve_playlists())
+            asyncio.run(self.retrieve_user_and_playlists(value))
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             State.set_token(None)
@@ -248,6 +255,8 @@ def run_app():
 
     # create our logger APP
     globals.logger.setup_logger()
+
+    State.playlist_manager = playlist_manager.PlaylistManager()
 
     multiprocessing.freeze_support()
     app = SPBackupApp()

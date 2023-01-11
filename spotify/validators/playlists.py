@@ -14,7 +14,7 @@ class Image(BaseModel):
     url: str = ""
     width: Optional[int]
 
-
+# The owner of the playlist
 class Owner(BaseModel):
     display_name: str = ""
     external_urls: Optional[ExternalUrls]
@@ -23,12 +23,12 @@ class Owner(BaseModel):
     type: str = ""
     uri: str = ""
 
-
+# basic information on the tracks
 class Tracks(BaseModel):
     href: str = ""
     total: int = 0
 
-
+# Playlist Item
 class Item(BaseModel):
     collaborative: bool
     description: str

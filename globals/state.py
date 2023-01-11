@@ -5,6 +5,8 @@ from spotify.validators.playlist_info import PlaylistInfo
 from spotify.validators.playlist_info import Tracks
 from spotify.validators.playlists import Playlists
 
+from playlist_manager import PlaylistManager
+
 
 class UI:
 
@@ -27,6 +29,8 @@ class State:
     _playlist: PlaylistInfo = None 
     _lock: threading.Lock = threading.Lock()
     _playlists: Playlists = None
+    playlist_manager: PlaylistManager = None
+
 
     @staticmethod
     def set_playlists(playlists: Playlists):

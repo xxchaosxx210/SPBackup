@@ -1,8 +1,12 @@
 import sqlite3
 import os
+
+import spotify.debugging
 from spotify.validators.user import User as SpotifyUser
 
+PLAYLIST_PATHNAME = "user_backups"
 DATABASE_FILENAME = "playlists.db"
+PLAYLIST_DIR: str = ""
 
 
 def create_user_table(conn: sqlite3.Connection):
@@ -29,12 +33,14 @@ def insert_user(conn: sqlite3.Connection, user: SpotifyUser):
 
 class PlaylistManager:
 
-    def __init__(self, settings_path: str) -> None:
+    def __init__(self) -> None:
+        global PLAYLIST_DIR
         self.user: SpotifyUser = None
         self.db_path: str = ""
-        self.__settings_path = settings_path
+        PLAYLIST_DIR = os.path.join(
+            spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
     
-    def create_user(self, user: SpotifyUser) -> str:
+    async def create_user(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
         then it creates a sqlite database if one doesnt exist. Then it
         adds a table named user with the user details
@@ -45,7 +51,7 @@ class PlaylistManager:
         Returns:
             str: returns the pathname to where the database was created
         """
-        user_path = os.path.join(self.__settings_path, f'{user.id}')
+        user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
         os.makedirs(user_path, exist_ok=True)
         self.db_path = os.path.join(user_path, DATABASE_FILENAME)
         with sqlite3.connect(self.db_path) as conn:
