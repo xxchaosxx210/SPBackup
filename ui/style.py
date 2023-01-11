@@ -45,7 +45,7 @@ def create_spotify_static_text(
     """
     static_text: wx.StaticText = wx.StaticText(parent, -1, label=label)
     static_text.SetForegroundColour(COLOUR_SPOTIFY_TEXT)
-    font: wx.Font = label.GetFont()
+    font: wx.Font = static_text.GetFont()
     font.SetPointSize(font_size)
     static_text.SetFont(font)
     return static_text

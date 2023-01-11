@@ -13,6 +13,9 @@ from globals.state import (
 class PlaylistInfoNavButtonPanel(NavButtonPanel):
     def __init__(self, parent):
         super().__init__(parent)
+        
+        self.backup_button.SetToolTip("Backup Tracks from this Playlist")
+        self.restore_button.SetToolTip("Restore Tracks to this Playlist")
 
     def change_state(self):
         playlist = State.get_playlist()
@@ -46,9 +49,9 @@ class PlaylistInfoToolBar(wx.Panel):
         self.navbuttons = PlaylistInfoNavButtonPanel(self)
 
         h_box: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        h_box.Add(self.navbuttons, 0, wx.ALL, 0)
+        h_box.Add(self.navbuttons, 0, wx.ALIGN_CENTER | wx.ALL, 0)
         v_box = wx.BoxSizer(wx.VERTICAL)
-        v_box.Add(h_box, 1, wx.EXPAND)
+        v_box.Add(h_box, 1, wx.ALIGN_CENTER)
         self.SetSizer(v_box)
 
 

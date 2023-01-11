@@ -13,6 +13,9 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
     def __init__(self, parent):
         super().__init__(parent)
 
+        self.backup_button.SetToolTip("Backup Playlists")
+        self.restore_button.SetToolTip("Restore Playlists")
+
     def change_state(self):
         playlists = State.get_playlists()
         self.next_button.Disable() if not playlists or not playlists.next \
@@ -41,9 +44,9 @@ class PlaylistsToolBar(wx.Panel):
         super().__init__(parent)
         self.navbuttons = PlaylistsNavButtonsPanel(self)
         h_box: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
-        h_box.Add(self.navbuttons, 0, wx.ALL, 0)
+        h_box.Add(self.navbuttons, 0, wx.ALL | wx.ALIGN_CENTER, 0)
         v_box = wx.BoxSizer(wx.VERTICAL)
-        v_box.Add(h_box, 1, wx.EXPAND)
+        v_box.Add(h_box, 1, wx.ALIGN_CENTER)
         self.SetSizer(v_box)
 
 
