@@ -37,6 +37,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         app = wx.GetApp()
         asyncio.run(app.retrieve_playlist_items(playlists.next))
 
+    def on_backup_click(self, evt: wx.CommandEvent):
+        print("Backup clicked")
+    
+    def on_restore_click(self, evt: wx.CommandEvent):
+        print("Restore clicked")
+
 
 class PlaylistsToolBar(wx.Panel):
 
