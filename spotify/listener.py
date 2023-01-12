@@ -134,7 +134,6 @@ class RedirectListener(threading.Thread):
                         "error",
                     )
                     self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
-        debugging.file_log("HTTP Server thread is exiting", "info")
 
     def send_response(self, conn: socket.socket, html: str):
         # Set the response to an HTML page that says "Thank you"
