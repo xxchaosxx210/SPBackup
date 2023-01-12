@@ -47,6 +47,7 @@ Album:
     name: str
 """
 
+
 class PlaylistManager:
 
     def __init__(self) -> None:
@@ -75,74 +76,18 @@ class PlaylistManager:
             # path already exists
             pass
         self.db_path = os.path.join(user_path, DATABASE_FILENAME)
+        return self.db_path
+    
+    async def create_tables(self):
         with sqlite3.connect(self.db_path) as conn:
             # setup the database
             cursor = conn.cursor()
             await self.create_backup_table(cursor)
-            """
-            import sqlite3
-
-conn = sqlite3.connect('database.db')
-cursor = conn.cursor()
-
-# Backups table
-cursor.execute('''
-    CREATE TABLE Backups (
-        id INTEGER PRIMARY KEY,
-        name TEXT,
-        description TEXT,
-        date_added INTEGER
-    )
-''')
-
-# Playlist table
-cursor.execute('''
-    CREATE TABLE Playlist (
-        id INTEGER PRIMARY KEY,
-        backups_id INTEGER,
-        FOREIGN KEY (backups_id) REFERENCES Backups(id),
-        name TEXT,
-        description TEXT
-    )
-''')
-
-# Track table
-cursor.execute('''
-    CREATE TABLE Track (
-        id INTEGER PRIMARY KEY,
-        playlist_id INTEGER,
-        FOREIGN KEY (playlist_id) REFERENCES Playlist(id),
-        artists_id INTEGER,
-        FOREIGN KEY (artists_id) REFERENCES Artists(id),
-        album_id INTEGER,
-        FOREIGN KEY (album_id) REFERENCES Album(id),
-        uri TEXT,
-        name TEXT
-    )
-''')
-
-# Artists table
-cursor.execute('''
-    CREATE TABLE Artists (
-        id INTEGER PRIMARY KEY,
-        name TEXT
-    )
-''')
-
-# Album table
-cursor.execute('''
-    CREATE TABLE Album (
-        id INTEGER PRIMARY KEY,
-        name TEXT
-    )
-''')
-
-conn.commit()
-conn.close()
-
-            """
+            await self.create_playlist_table(cursor)
+            await self.create_album_table(cursor)
+            await self.create_artists_table(cursor)
+            await self.create_track_table(cursor)
             conn.commit()
-        return self.db_path
 
     async def create_backup_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''CREATE TABLE IF NOT EXISTS Backups (
@@ -150,6 +95,46 @@ conn.close()
                         name TEXT,
                         description TEXT,
                         date_added INTEGER);''')
+    
+    async def create_playlist_table(self, cursor: sqlite3.Cursor):
+        cursor.execute('''CREATE TABLE IF NOT EXISTS Playlist (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            backup_id INTEGER,
+            FOREIGN KEY (backup_id) REFERENCES Backups(id));
+        ''')
+    
+    async def create_track_table(self, cursor: sqlite3.Cursor):
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Track (
+            id INTEGER PRIMARY KEY,
+            uri TEXT NOT NULL,
+            name TEXT NOT NULL,
+            playlist_id INTEGER,
+            artists_id INTEGER,
+            album_id INTEGER,
+            FOREIGN KEY (playlist_id) REFERENCES Playlist(id),
+            FOREIGN KEY (artists_id) REFERENCES Artists(id),
+            FOREIGN KEY (album_id) REFERENCES Album(id)
+        );
+        ''')
+
+    async def create_album_table(self, cursor: sqlite3.Cursor):
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Album(
+            id INTEGER PRIMARY KEY,
+            name TEXT
+        );
+        ''')
+
+    async def create_artists_table(self, cursor: sqlite3.Cursor):
+        cursor.execute('''
+        CREATE TABLE IF NOT EXISTS Artists(
+            id INTEGER PRIMARY KEY,
+            name TEXT
+        );
+        ''')
     
     async def add_backup(self, backup: dict):
         with sqlite3.connect(self.db_path) as conn:
@@ -171,6 +156,7 @@ async def _test():
     )
     pl: PlaylistManager = PlaylistManager()
     await pl.create_backup_directory(user=user)
+    await pl.create_tables()
     # await pl.add_backup({
     #     "name": "CPM"
     # })
