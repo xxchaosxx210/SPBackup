@@ -8,7 +8,7 @@
             "name": "Python: SPBack App",
             "type": "python",
             "request": "launch",
-            "program": "${workspaceFolder}/playlist_manager.py",
+            "program": "${workspaceFolder}/app.py",
             "console": "integratedTerminal",
             "justMyCode": true,
             "args": ["--debug"]

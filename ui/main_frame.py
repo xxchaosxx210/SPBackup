@@ -66,6 +66,13 @@ class MainFrame(wx.Frame):
 
         menu_bar.Append(view_menu, "View")
 
+        debug_menu = wx.Menu()
+        all_tracks = wx.MenuItem(debug_menu, wx.ID_ANY, "Get All Tracks")
+        self.Bind(wx.EVT_MENU, self.on_get_all_tracks, all_tracks)
+        debug_menu.Append(all_tracks)
+
+        menu_bar.Append(debug_menu, "Debug")
+
         help_menu = wx.Menu()
         about_menuitem = wx.MenuItem(help_menu, wx.ID_ANY, "About")
         self.Bind(wx.EVT_MENU, self.on_about_menu, about_menuitem)
@@ -75,6 +82,9 @@ class MainFrame(wx.Frame):
 
         # Set the frame's menu bar
         self.SetMenuBar(menu_bar)
+    
+    def on_get_all_tracks(self, evt: wx.CommandEvent):
+        print("Hello")
     
     def on_about_menu(self, evt: wx.CommandEvent):
         dlg = BubbleDialog(self, -1, "SPBackup", [

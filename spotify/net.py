@@ -236,6 +236,19 @@ async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) ->
                 return Tracks(**tracks)
             raise_spotify_exception(response)
 
+async def get_all_tracks(access_token: str, playlist_id: str) -> Tracks:
+    tracks_container = []
+    tracks: Tracks = await get_tracks_from_url(
+        access_token, const.URI_PLAYLIST_TRACKS(playlist_id))
+    if tracks.items:
+        tracks_container.extend(tracks.items)
+    while tracks.next:
+        tracks: Tracks = get_tracks_from_url(
+            access_token, tracks.next
+        )
+        if tracks.items:
+            tracks_container.extend(tracks.items)
+    return tracks_container
 
 async def get_tracks_from_url(access_token: str, url: str) -> Tracks:
     """retrieve tracks from the exact URL. Used in conjuction with get_playlist
