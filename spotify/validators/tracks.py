@@ -17,21 +17,13 @@ class AddedBy(BaseModel):
     uri: str
 
 
-class ExternalUrls1(BaseModel):
-    spotify: str
-
-
 class Artist(BaseModel):
-    external_urls: ExternalUrls1
+    external_urls: ExternalUrls
     href: str
     id: str
     name: str
     type: str
     uri: str
-
-
-class ExternalUrls2(BaseModel):
-    spotify: str
 
 
 class Image(BaseModel):
@@ -44,7 +36,7 @@ class Album(BaseModel):
     album_type: str
     artists: List[Artist]
     available_markets: List[str]
-    external_urls: ExternalUrls2
+    external_urls: ExternalUrls
     href: str
     id: str
     images: List[Image]
@@ -52,19 +44,6 @@ class Album(BaseModel):
     release_date: str
     release_date_precision: str
     total_tracks: int
-    type: str
-    uri: str
-
-
-class ExternalUrls3(BaseModel):
-    spotify: str
-
-
-class Artist1(BaseModel):
-    external_urls: ExternalUrls3
-    href: str
-    id: str
-    name: str
     type: str
     uri: str
 
@@ -79,7 +58,7 @@ class ExternalUrls4(BaseModel):
 
 class Track(BaseModel):
     album: Album
-    artists: List[Artist1]
+    artists: List[Artist]
     available_markets: List[str]
     disc_number: int
     duration_ms: int

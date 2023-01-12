@@ -181,7 +181,8 @@ async def get_user_info(token: str) -> User:
 
             # Return the user information as a dictionary
             json_response = await response.json()
-            return User(**json_response)
+            user = User(**json_response)
+            return user
 
 
 async def get_playlist(access_token: str, playlist_id: str) -> PlaylistInfo:

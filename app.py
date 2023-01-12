@@ -69,7 +69,7 @@ class SPBackupApp(wx.App):
     async def retrieve_user_and_playlists(self, token: str):
         await self.retrieve_playlists(token)
         user = await spotify.net.get_user_info(token)
-        await State.playlist_manager.create_user(user)
+        await State.playlist_manager.create_backup_directory(user)
     
     async def retrieve_playlists(self, token: str):
         """sends a get user playlist request and loads the Playlists listctrl if successful
