@@ -4,6 +4,12 @@ from ui.playlist_splitterwindow import PlaylistSplitterWindow
 from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
 from globals.state import UI
+from globals.state import State
+import globals.logger
+from spotify.validators.playlist import Playlist
+from spotify.validators.tracks import Tracks
+from spotify.validators.tracks import Track
+import spotify.net
 import image_manager
 from ui.dialogs.bubbledialog import BubbleDialog
 
@@ -84,7 +90,21 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(menu_bar)
     
     def on_get_all_tracks(self, evt: wx.CommandEvent):
-        print("Hello")
+        index = UI.playlists_ctrl.GetFirstSelected()
+        if index == -1:
+            return
+        playlist: Playlist = State.get_playlists().items[index]
+        loop = spotify.net.get_event_loop()
+        globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
+        tracks: Tracks = loop.run_until_complete(
+            spotify.net.get_all_tracks(State.get_token(), playlist.id))
+        for trackmarker in tracks:
+            try:
+                globals.logger.console(f'Name: {trackmarker.track_name}')
+                globals.logger.console(f'Uri: {trackmarker.track.uri}')
+            except AttributeError as err:
+                print("")
+        
     
     def on_about_menu(self, evt: wx.CommandEvent):
         dlg = BubbleDialog(self, -1, "SPBackup", [

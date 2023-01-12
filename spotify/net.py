@@ -54,6 +54,15 @@ def await_on_sync_call(func_to_wait_on: any, **kwargs) -> any:
     return value
 
 
+def get_event_loop() -> asyncio.AbstractEventLoop:
+    try:
+        loop = asyncio.get_event_loop()
+    except RuntimeError:
+        loop = asyncio.new_event_loop()
+    finally:
+        return loop
+
+
 def raise_spotify_exception(response: aiohttp.ClientResponse):
     """checks the response.status and raises a SpotifyError
 
@@ -67,9 +76,7 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
         SpotifyError: _description_
     """
     if response.status == const.STATUS_BAD_TOKEN:
-        raise SpotifyError(
-            response.status, "Bad or Expired Token. Please Re-Authenticate"
-        )
+        raise SpotifyError(response.status, "Bad or Expired Token. Please Re-Authenticate")
     elif response.status == const.STATUS_BAD_OAUTH_REQUEST:
         raise SpotifyError(
             response.status,
@@ -80,8 +87,7 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
     else:
         raise SpotifyError(
             response.status,
-            f"Unknown status code: {response.status}. Please check Spotify API documentation for the error",
-        )
+            f"Unknown status code: {response.status}. Please check Spotify API documentation for the error")
 
 
 async def authorize(scopes: tuple) -> str:
@@ -243,7 +249,7 @@ async def get_all_tracks(access_token: str, playlist_id: str) -> Tracks:
     if tracks.items:
         tracks_container.extend(tracks.items)
     while tracks.next:
-        tracks: Tracks = get_tracks_from_url(
+        tracks: Tracks = await get_tracks_from_url(
             access_token, tracks.next
         )
         if tracks.items:

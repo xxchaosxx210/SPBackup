@@ -67,9 +67,19 @@ class SPBackupApp(wx.App):
             asyncio.run(self.retrieve_user_and_playlists(token))
     
     async def retrieve_user_and_playlists(self, token: str):
-        await self.retrieve_playlists(token)
-        user = await spotify.net.get_user_info(token)
-        await State.playlist_manager.create_backup_directory(user)
+        """gets the user information from the loaded token and also retrieved playlists
+
+        Args:
+            token (str): User token
+        """
+        try:
+            await self.retrieve_playlists(token)
+            user = await spotify.net.get_user_info(token)
+            await State.playlist_manager.create_backup_directory(user)
+        except spotify.net.SpotifyError as err:
+            self.handle_spotify_error(err)
+        finally:
+            return
     
     async def retrieve_playlists(self, token: str):
         """sends a get user playlist request and loads the Playlists listctrl if successful
@@ -140,6 +150,9 @@ class SPBackupApp(wx.App):
     
     def handle_spotify_error(self, error: spotify.net.SpotifyError):
         """handle the error status codes recieved from Spotify
+
+        if the status returned is a bad token then reauthentication will begin again
+        either way the token will be removed and reauthorization will have to retak again
 
         Args:
             error (SpotifyError): exceptioon object
