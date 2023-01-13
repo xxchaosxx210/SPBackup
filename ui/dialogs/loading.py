@@ -27,18 +27,14 @@ class LoadingDialog(wx.Dialog):
         main_sizer.Add(self.gauge, 0, wx.ALL | wx.CENTER, 5)
         main_sizer.Add(self.textbox, 1, wx.EXPAND | wx.ALL, 5)
         h_sizer.Add(self.cancel_button, 0, wx.ALL | wx.CENTER, 5)
-
         main_sizer.Add(h_sizer, 0, wx.ALL | wx.CENTER, 5)
-
-        self.SetSize((400, 400))
-
-        # Set sizer
         self.SetSizerAndFit(main_sizer)
 
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+
+        self.SetSize((400, 400))
         # Center the dialog on screen
         self.Center()
-
-        self.Bind(wx.EVT_CLOSE, self.OnClose)
     
     def OnClose(self, evt: wx.CommandEvent):
         pass
