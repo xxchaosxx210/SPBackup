@@ -1,5 +1,6 @@
 import wx
 import asyncio
+
 from ui.playlist_splitterwindow import PlaylistSplitterWindow
 from ui.playlist_ctrl import PlaylistInfoToolBar
 from ui.playlists_ctrl import PlaylistsToolBar
@@ -11,7 +12,9 @@ from spotify.validators.tracks import Tracks
 from spotify.validators.tracks import Track
 import spotify.net
 import image_manager
+
 from ui.dialogs.bubbledialog import BubbleDialog
+from ui.dialogs.loading import LoadingDialog
 
 class MainFrame(wx.Frame):
 
@@ -40,55 +43,63 @@ class MainFrame(wx.Frame):
     def create_menubar(self):
         """Creates the menu bar."""
         # Create a menu bar
-        menu_bar = wx.MenuBar()
+        self.menu_bar = wx.MenuBar()
 
         # Create a User menu
-        user_menu = wx.Menu()
+        self.user_menu = wx.Menu()
 
         # Create a Details menu item
-        details_item = wx.MenuItem(user_menu, wx.ID_ANY, "Details")
-        user_menu.Append(details_item)
-        self.Bind(wx.EVT_MENU, self.on_details, details_item)
+        self.details_item = wx.MenuItem(self.user_menu, wx.ID_ANY, "Details")
+        self.user_menu.Append(self.details_item)
+        self.Bind(wx.EVT_MENU, self.on_details, self.details_item)
 
         # Create a Re-authorize menu item
-        reauth_item = wx.MenuItem(user_menu, wx.ID_ANY, "Re-authorize")
-        user_menu.Append(reauth_item)
-        self.Bind(wx.EVT_MENU, self.on_reauth, reauth_item)
+        self.reauth_item = wx.MenuItem(self.user_menu, wx.ID_ANY, "Re-authorize")
+        self.user_menu.Append(self.reauth_item)
+        self.Bind(wx.EVT_MENU, self.on_reauth, self.reauth_item)
 
         # Add the User menu to the menu bar
-        menu_bar.Append(user_menu, "User")
+        self.menu_bar.Append(self.user_menu, "User")
 
         # View Menu creation
-        view_menu = wx.Menu()
+        self.view_menu = wx.Menu()
 
         # Create a Hide Playlists MenuItem
-        self.hide_playlists_menuitem = wx.MenuItem(view_menu, wx.ID_ANY, "Hide Playlists", kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.toggle_hide_playlists, self.hide_playlists_menuitem)
-        view_menu.Append(self.hide_playlists_menuitem)
+        self.hide_playlists_menuitem = wx.MenuItem(
+            self.view_menu, wx.ID_ANY, "Hide Playlists", kind=wx.ITEM_CHECK)
+        self.Bind(
+            wx.EVT_MENU, self.toggle_hide_playlists, self.hide_playlists_menuitem)
+        self.view_menu.Append(self.hide_playlists_menuitem)
         # Create a Hide Tracks MenuItem
-        self.hide_tracks_menuitem = wx.MenuItem(view_menu, wx.ID_ANY, "Hide Tracks", kind=wx.ITEM_CHECK)
-        self.Bind(wx.EVT_MENU, self.toggle_hide_tracks, self.hide_tracks_menuitem)
-        view_menu.Append(self.hide_tracks_menuitem)
+        self.hide_tracks_menuitem = wx.MenuItem(
+            self.view_menu, wx.ID_ANY, "Hide Tracks", kind=wx.ITEM_CHECK)
+        self.Bind(
+            wx.EVT_MENU, self.toggle_hide_tracks, self.hide_tracks_menuitem)
+        self.view_menu.Append(self.hide_tracks_menuitem)
 
-        menu_bar.Append(view_menu, "View")
+        self.menu_bar.Append(self.view_menu, "View")
 
-        debug_menu = wx.Menu()
-        all_tracks = wx.MenuItem(debug_menu, wx.ID_ANY, "Get All Tracks")
-        self.Bind(wx.EVT_MENU, self.on_get_all_tracks, all_tracks)
-        debug_menu.Append(all_tracks)
+        self.debug_menu = wx.Menu()
+        self.all_tracks = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Get All Tracks")
+        self.Bind(wx.EVT_MENU, self.on_get_all_tracks, self.all_tracks)
+        self.debug_menu.Append(self.all_tracks)
 
-        menu_bar.Append(debug_menu, "Debug")
+        show_loading_dlg = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Show Loading Dialog")
+        self.Bind(wx.EVT_MENU, self.on_show_loading_dlg, show_loading_dlg)
+        self.debug_menu.Append(show_loading_dlg)
 
-        help_menu = wx.Menu()
-        about_menuitem = wx.MenuItem(help_menu, wx.ID_ANY, "About")
-        self.Bind(wx.EVT_MENU, self.on_about_menu, about_menuitem)
-        help_menu.Append(about_menuitem)
+        self.menu_bar.Append(self.debug_menu, "Debug")
 
-        menu_bar.Append(help_menu, "Help")
+        self.help_menu = wx.Menu()
+        self.about_menuitem = wx.MenuItem(self.help_menu, wx.ID_ANY, "About")
+        self.Bind(wx.EVT_MENU, self.on_about_menu, self.about_menuitem)
+        self.help_menu.Append(self.about_menuitem)
+
+        self.menu_bar.Append(self.help_menu, "Help")
 
         # Set the frame's menu bar
-        self.SetMenuBar(menu_bar)
-    
+        self.SetMenuBar(self.menu_bar)
+        
     def on_get_all_tracks(self, evt: wx.CommandEvent):
         index = UI.playlists_ctrl.GetFirstSelected()
         if index == -1:
@@ -104,7 +115,12 @@ class MainFrame(wx.Frame):
                 globals.logger.console(f'Uri: {trackmarker.track.uri}')
             except AttributeError as err:
                 print("")
-        
+    
+    def on_show_loading_dlg(self, evt: wx.CommandEvent):
+        dlg = LoadingDialog(self)
+        if dlg.ShowModalWithText("Connecting from the debug menu...") == wx.ID_CANCEL:
+            globals.logger.console("Cancel pressed")
+        dlg.Destroy()    
     
     def on_about_menu(self, evt: wx.CommandEvent):
         dlg = BubbleDialog(self, -1, "SPBackup", [
