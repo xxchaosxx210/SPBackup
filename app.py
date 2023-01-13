@@ -3,6 +3,8 @@ import asyncio
 import multiprocessing
 import argparse
 
+from wxasync import WxAsyncApp
+
 from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
 import ui.dialogs.user
@@ -27,7 +29,7 @@ from globals.state import (
 )
 
 
-class SPBackupApp(wx.App):
+class SPBackupApp(WxAsyncApp):
 
     def reset(self):
         """cleans up the UI and resets the global state for the Playlists
@@ -64,7 +66,8 @@ class SPBackupApp(wx.App):
             self.start_listening_for_redirect()
         else:
             globals.logger.console("Token found. Retrieving Playlists from User...", "info")
-            asyncio.run(self.retrieve_user_and_playlists(token))
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.retrieve_user_and_playlists(token))
     
     async def retrieve_user_and_playlists(self, token: str):
         """gets the user information from the loaded token and also retrieved playlists
@@ -184,7 +187,8 @@ class SPBackupApp(wx.App):
             globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
-            asyncio.run(self.retrieve_user_and_playlists(value))
+            asyncio.get_event_loop().create_task(
+                self.retrieve_user_and_playlists(value))
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             State.set_token(None)
@@ -258,7 +262,7 @@ def add_args() -> argparse.Namespace:
         help="enable debug mode")
     return parser.parse_args()
 
-def run_app():
+async def run_app():
 
     # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
@@ -280,7 +284,7 @@ def run_app():
         title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}")
     UI.main_frame.Show()
     app.run_background_auth_check()
-    app.MainLoop()
+    await app.MainLoop()
 
 if __name__ == '__main__':
-    run_app()
+    asyncio.run(run_app())

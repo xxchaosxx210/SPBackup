@@ -38,7 +38,8 @@ class PlaylistInfoNavButtonPanel(NavButtonPanel):
         if playlist:
             if playlist.tracks.next is not None:
                 app = wx.GetApp()
-                asyncio.run(app.retrieve_tracks(playlist.tracks.next))
+                asyncio.get_event_loop().create_task(
+                    app.retrieve_tracks(playlist.tracks.next))
 
     def on_backup_click(self, evt: wx.CommandEvent):
         print("Backup clicked")

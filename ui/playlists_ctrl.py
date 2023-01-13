@@ -28,14 +28,16 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         if not playlists or not playlists.previous:
             return
         app = wx.GetApp()
-        asyncio.run(app.retrieve_playlist_items(playlists.previous))
+        asyncio.get_event_loop().create_task(
+            app.retrieve_playlist_items(playlists.previous))
 
     def on_next_button(self, event: wx.CommandEvent):
         playlists = State.get_playlists()
         if not playlists or not playlists.next:
             return
         app = wx.GetApp()
-        asyncio.run(app.retrieve_playlist_items(playlists.next))
+        asyncio.get_event_loop().create_task(
+            app.retrieve_playlist_items(playlists.next))
 
     def on_backup_click(self, evt: wx.CommandEvent):
         print("Backup clicked")
@@ -114,4 +116,5 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         # Do something with the Playlist object
         app = wx.GetApp()
         playlist: PlaylistsItem = State.get_playlists().items[item_index]
-        asyncio.run(app.retrieve_playlist(playlist.id))
+        loop = asyncio.get_event_loop()
+        loop.create_task(app.retrieve_playlist(playlist.id))

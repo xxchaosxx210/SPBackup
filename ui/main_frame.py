@@ -8,8 +8,6 @@ from globals.state import UI
 from globals.state import State
 import globals.logger
 from spotify.validators.playlist import Playlist
-from spotify.validators.tracks import Tracks
-from spotify.validators.tracks import Track
 import spotify.net
 import image_manager
 
@@ -81,7 +79,10 @@ class MainFrame(wx.Frame):
 
         self.debug_menu = wx.Menu()
         self.all_tracks = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Get All Tracks")
-        self.Bind(wx.EVT_MENU, self.on_get_all_tracks, self.all_tracks)
+        self.Bind(
+            wx.EVT_MENU, 
+            lambda evt : asyncio.create_task(self.on_get_all_tracks()), 
+            self.all_tracks)
         self.debug_menu.Append(self.all_tracks)
 
         show_loading_dlg = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Show Loading Dialog")
@@ -100,14 +101,14 @@ class MainFrame(wx.Frame):
         # Set the frame's menu bar
         self.SetMenuBar(self.menu_bar)
         
-    def on_get_all_tracks(self, evt: wx.CommandEvent):
+    async def on_get_all_tracks(self, *args):
         index = UI.playlists_ctrl.GetFirstSelected()
         if index == -1:
             return
         playlist: Playlist = State.get_playlists().items[index]
-        loop = spotify.net.get_event_loop()
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
-        tracks: Tracks = loop.run_until_complete(
+        loop = asyncio.get_event_loop()
+        tracks = await loop.create_task(
             spotify.net.get_all_tracks(State.get_token(), playlist.id))
         for trackmarker in tracks:
             try:
@@ -133,7 +134,7 @@ class MainFrame(wx.Frame):
 
     def on_details(self, event: wx.CommandEvent):
         """Event handler for the Details menu item."""
-        asyncio.run(self.app.retrieve_user_info())
+        asyncio.get_event_loop().create_task(self.app.retrieve_user_info())
 
     def on_reauth(self, event: wx.CommandEvent):
         """Event handler for the Re-authorize menu item."""
