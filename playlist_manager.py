@@ -75,6 +75,7 @@ class PlaylistManager:
             # path already exists
             pass
         self.db_path = os.path.join(user_path, DATABASE_FILENAME)
+        await self.create_tables()
         return self.db_path
     
     async def create_tables(self):
