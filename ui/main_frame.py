@@ -119,7 +119,8 @@ class MainFrame(wx.Frame):
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
         dlg = LoadingDialog(self)
         if dlg.ShowModalWithText("Connecting from the debug menu...") == wx.ID_CANCEL:
-            globals.logger.console("Cancel pressed")
+            # close running threads here
+            pass
         dlg.Destroy()    
     
     def on_about_menu(self, evt: wx.CommandEvent):

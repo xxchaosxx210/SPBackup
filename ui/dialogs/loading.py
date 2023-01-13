@@ -2,10 +2,12 @@ import wx
 
 class LoadingDialog(wx.Dialog):
     def __init__(self, parent):
-        wx.Dialog.__init__(self, parent, title="Loading...")
+        wx.Dialog.__init__(
+            self, parent, title="Loading...", style=wx.CAPTION|wx.CLOSE)
 
         # Create wxGauge
-        self.gauge = wx.Gauge(self, range=100, size=(250, 25), style=wx.GA_HORIZONTAL)
+        self.gauge = wx.Gauge(
+            self, range=100, size=(250, 25), style=wx.GA_HORIZONTAL)
         self.gauge.SetValue(0)
 
         # Create a text box
@@ -35,6 +37,11 @@ class LoadingDialog(wx.Dialog):
 
         # Center the dialog on screen
         self.Center()
+
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
+    
+    def OnClose(self, evt: wx.CommandEvent):
+        pass
     
     def ShowModalWithText(self, text: str):
         self.reset(0, text)
