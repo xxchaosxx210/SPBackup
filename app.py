@@ -86,12 +86,13 @@ class SPBackupApp(wx.App):
         """
         try:
             playlists: SpotifyPlaylists = await spotify.net.get_playlists(token)
+            State.set_playlists(playlists)
+            wx.CallAfter(UI.playlists_ctrl.populate)
+            wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
+        finally: 
             return
-        State.set_playlists(playlists)
-        wx.CallAfter(UI.playlists_ctrl.populate)
-        wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
     
     async def retrieve_user_info(self):
         """sends a user information request and opens a dialog with user details
