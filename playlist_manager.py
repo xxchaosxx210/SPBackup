@@ -1,6 +1,5 @@
 import sqlite3
 import os
-import logging
 import time
 
 import spotify.debugging
