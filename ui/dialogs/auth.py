@@ -19,7 +19,11 @@ class AuthDialog(wx.Dialog):
         self.label.SetForegroundColour(style.COLOUR_SPOTIFY_TEXT)
 
         # Set the label's font to the font used by Spotify
-        font = wx.Font(wx.FONTSIZE_MEDIUM, wx.FONTFAMILY_DEFAULT, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_BOLD)
+        font = wx.Font(
+            wx.FONTSIZE_MEDIUM, 
+            wx.FONTFAMILY_DEFAULT, 
+            wx.FONTSTYLE_NORMAL, 
+            wx.FONTWEIGHT_BOLD)
         self.label.SetFont(font)
 
         # Create a button
