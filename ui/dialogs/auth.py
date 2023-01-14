@@ -12,7 +12,8 @@ class AuthDialog(wx.Dialog):
         self.SetBackgroundColour(style.COLOUR_SPOTIFY_BACKGROUND)
 
         # Create a label
-        self.label = wx.StaticText(self, label="Click the Login Button to Authenticate with your Spotify account")
+        self.label = wx.StaticText(self, 
+        label="""Click the Authorize Button to Authenticate with your Spotify account.\n\nNote: You may be required to login in through your Default Web Browser""")
 
         # Set the label's text color to white
         self.label.SetForegroundColour(style.COLOUR_SPOTIFY_TEXT)

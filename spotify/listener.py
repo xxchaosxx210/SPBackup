@@ -53,10 +53,6 @@ HTML = """
 """
 
 
-async def http_server(app_name: str, callback: any):
-    pass
-
-
 class RedirectListener(threading.Thread):
 
     EVENT_SOCKET_ERROR = 0
