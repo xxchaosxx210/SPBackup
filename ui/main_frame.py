@@ -100,7 +100,7 @@ class MainFrame(wx.Frame):
 
         # Set the frame's menu bar
         self.SetMenuBar(self.menu_bar)
-        
+
     async def on_get_all_tracks(self, *args):
         # get the first selected item from the listctrl
         index = UI.playlists_ctrl.GetFirstSelected()
@@ -109,15 +109,21 @@ class MainFrame(wx.Frame):
         # get the playlist information to display to the console
         playlist: Playlist = State.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
-        loop = asyncio.get_event_loop()
         # get the generator and iterate through
+        dlg = LoadingDialog(self, playlist.tracks.total, "Loading all tracks...")
+        dlg.Show(True)
+        # import threading
+        # threading.Thread(target=dlg.Show).start()
         async for track in spotify.net.get_all_tracks(
             State.get_token(), playlist.id):
             try:
-                globals.logger.console(f'Name: {track.track_name}')
-                globals.logger.console(f'Uri: {track.track.uri}')
+                # globals.logger.console(f'Name: {track.track_name}')
+                # globals.logger.console(f'Uri: {track.track.uri}')
+                dlg.update_progress()
+                dlg.append_text(text=f"Loaded {track.track_name}.")
             except (AttributeError, TypeError) as err:
                 print("")
+        dlg.complete()
     
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
         dlg = LoadingDialog(self)

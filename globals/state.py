@@ -19,6 +19,7 @@ class UI:
     playlistinfo_toolbar: wx.Panel = None
     playlists_spw: wx.SplitterWindow = None
     statusbar: wx.StatusBar = None
+    progress_dialog: wx.Dialog = None
 
 
 class State:
