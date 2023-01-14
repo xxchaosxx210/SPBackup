@@ -175,6 +175,10 @@ class SPBackupApp(WxAsyncApp):
     def on_listener_response(self, status: int, value: any):
         """response from the RedirectListener
 
+        Note this is not running in the main thread or main event loop!!!
+
+        if calling async create a new event loop!!!
+
         Args:
             status (str): read the RedirectListener EVENT for documentation
             value (any): depends on status. If an error then it will be error object else json
@@ -187,8 +191,16 @@ class SPBackupApp(WxAsyncApp):
             globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
-            asyncio.get_event_loop().create_task(
-                self.retrieve_user_and_playlists(value))
+            # remember that this function is being called from the local server thread
+            # not the main thread. So cant use the main event loop asyncio
+            # so to fix this just call wxCallAfter so can use the main event loop
+            # and keep everything in sync
+            # Could just call asyncio.run(self.retrieve_user_and_playlists(value)) instead
+            # Im going to remove threading method and replace with async in a later version
+            # but for now this works!!!
+            wx.CallAfter(
+                lambda *args: asyncio.get_event_loop().create_task(
+                    self.retrieve_user_and_playlists(value)))
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             State.set_token(None)
