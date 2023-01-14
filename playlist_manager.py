@@ -8,7 +8,6 @@ from spotify.validators.playlist import Playlist
 
 PLAYLIST_PATHNAME = "user_backups"
 DATABASE_FILENAME = "playlists.db"
-TEMP_DATABASE_FILENAME = ".current_playlists.db"
 PLAYLIST_DIR: str = ""
 
 
