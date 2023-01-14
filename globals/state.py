@@ -32,7 +32,6 @@ class State:
     _playlists: Playlists = None
     playlist_manager: PlaylistManager = None
 
-
     @staticmethod
     def set_playlists(playlists: Playlists):
         with State._lock:
