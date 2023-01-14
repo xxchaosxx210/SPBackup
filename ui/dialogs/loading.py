@@ -51,6 +51,12 @@ class LoadingDialog(wx.Dialog):
         self.update_progress(0, text)
 
     def update_progress(self, progress: int, text: str):
+        """update the gauge and append text to the next line
+
+        Args:
+            progress (int): progress value
+            text (str): new line of text
+        """
         self.gauge.SetValue(progress)
         if not text:
             return

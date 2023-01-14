@@ -250,8 +250,7 @@ async def get_all_tracks(access_token: str, playlist_id: str) -> Tracks:
         tracks_container.extend(tracks.items)
     while tracks.next:
         tracks: Tracks = await get_tracks_from_url(
-            access_token, tracks.next
-        )
+            access_token, tracks.next)
         if tracks.items:
             tracks_container.extend(tracks.items)
     return tracks_container
