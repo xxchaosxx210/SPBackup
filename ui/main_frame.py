@@ -102,19 +102,21 @@ class MainFrame(wx.Frame):
         self.SetMenuBar(self.menu_bar)
         
     async def on_get_all_tracks(self, *args):
+        # get the first selected item from the listctrl
         index = UI.playlists_ctrl.GetFirstSelected()
         if index == -1:
             return
+        # get the playlist information to display to the console
         playlist: Playlist = State.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
         loop = asyncio.get_event_loop()
-        tracks = await loop.create_task(
-            spotify.net.get_all_tracks(State.get_token(), playlist.id))
-        for trackmarker in tracks:
+        # get the generator and iterate through
+        async for track in spotify.net.get_all_tracks(
+            State.get_token(), playlist.id):
             try:
-                globals.logger.console(f'Name: {trackmarker.track_name}')
-                globals.logger.console(f'Uri: {trackmarker.track.uri}')
-            except AttributeError as err:
+                globals.logger.console(f'Name: {track.track_name}')
+                globals.logger.console(f'Uri: {track.track.uri}')
+            except (AttributeError, TypeError) as err:
                 print("")
     
     def on_show_loading_dlg(self, evt: wx.CommandEvent):

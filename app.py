@@ -116,7 +116,8 @@ class SPBackupApp(WxAsyncApp):
             playlist_id (int): the ID of the playlist too recieve
         """
         try:
-            playlist: SpotifyPlaylistInfo = await spotify.net.get_playlist(State.get_token(), playlist_id)
+            playlist: SpotifyPlaylistInfo = await spotify.net.get_playlist(
+                State.get_token(), playlist_id)
             State.set_playlist(playlist)
             wx.CallAfter(
                 UI.playlistinfo_ctrl.populate)
