@@ -7,9 +7,9 @@ from spotify.validators.user import User as SpotifyUser
 from spotify.validators.playlist import Playlist
 
 PLAYLIST_PATHNAME = "user_backups"
+# backed up playlists
 DATABASE_FILENAME = "playlists.db"
 PLAYLIST_DIR: str = ""
-
 
 """
 @dataclass

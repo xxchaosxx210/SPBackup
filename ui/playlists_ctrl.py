@@ -59,6 +59,7 @@ class PlaylistsToolBar(wx.Panel):
 
 
 class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
+
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
