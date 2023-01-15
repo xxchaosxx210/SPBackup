@@ -6,7 +6,7 @@ import base64
 import spotify.constants as constants
 import spotify.validators.tracks
 import spotify.validators.user
-import spotify.validators.playlist_info
+import spotify.validators.playlist
 import spotify.validators.playlists
 
 
@@ -212,7 +212,7 @@ async def get_user_info(token: str) -> spotify.validators.user.User:
 
 async def get_playlist(
     access_token: str, playlist_id: str
-) -> spotify.validators.playlist_info.PlaylistInfo:
+) -> spotify.validators.playlist.Playlist:
     """Retrieve a playlist from the Spotify API
 
     Args:
@@ -220,10 +220,10 @@ async def get_playlist(
         playlist_id (str): The Spotify ID of the playlist
 
     Returns:
-        spotify.validators.playlist_info.PlaylistInfo
+        spotify.validators.playlist.Playlist
     """
     headers = create_auth_token_header(access_token)
-    # the fields what we want returned you add more later check the spotify.validators.playlist_info file for the classnames and properties returned
+    # the fields what we want returned you add more later check the spotify.validators.playlist file for the classnames and properties returned
     # dont forget to update that file if you add or remove any more to the fields
     query_params = {
         "fields": "id,name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
@@ -234,8 +234,8 @@ async def get_playlist(
         ) as response:
             if response.status == constants.STATUS_OK:
                 json_response = await response.json()
-                # sp_debug.save(".get_playlist_output.json", json_response)
-                plylist = spotify.validators.playlist_info.PlaylistInfo(**json_response)
+                plylist = spotify.validators.playlist.Playlist(
+                    **json_response)
                 return plylist
             raise_spotify_exception(response)
 
@@ -287,7 +287,7 @@ async def get_playlist_tracks_from_url(
     access_token: str, url: str
 ) -> spotify.validators.tracks.Tracks:
     """retrieve tracks from the exact URL. Used in conjuction with get_playlist
-    as PlaylistInfo.Tracks contains next and prev links to tracks from the playlist
+    as Playlist.Tracks contains next and prev links to tracks from the playlist
     remember that as of the current time of writing this library that Spotify limits
     tracks request by 100 so if users playlist has more than 100 tracks in it then
     pagination is required

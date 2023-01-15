@@ -1,8 +1,7 @@
 import wx
 import asyncio
 import wx.lib.mixins.listctrl as listmix
-from spotify.validators.playlist_info import Artist
-from spotify.validators.playlist_info import Item
+import spotify.validators.playlist
 from ui.navbuttonpanel import NavButtonPanel
 
 from globals.state import (
@@ -101,11 +100,11 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def clear_items(self):
         self.DeleteAllItems()
     
-    def add_item(self, item_index: int, item: Item):
+    def add_item(self, item_index: int, item: spotify.validators.playlist.Item):
         row_index = self.InsertItem(index=item_index, label="")
         select_item: wx.ListItem = self.GetItem(row_index, 0)
         select_item.SetState(wx.LIST_STATE_SELECTED)
-        def get_artist_name(_artist: Artist) -> str:
+        def get_artist_name(_artist: spotify.validators.playlist.Artist) -> str:
             """extract the name of the artists. Should be used in a map iteration function to iterate through the artists collaboration
 
             Args:

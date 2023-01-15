@@ -14,8 +14,8 @@ import globals.token
 import spotify.constants
 import spotify.net
 import spotify.debug
-from spotify.validators.playlists import Playlists as SpotifyPlaylists
-from spotify.validators.playlist_info import PlaylistInfo as SpotifyPlaylistInfo
+from spotify.validators.playlists import Playlists
+from spotify.validators.playlist import Playlist
 from spotify.validators.user import User as SpotifyUser
 from spotify.validators.tracks import Tracks as ExtendedTracks
 
@@ -88,7 +88,7 @@ class SPBackupApp(WxAsyncApp):
         """sends a get user playlist request and loads the Playlists listctrl if successful
         """
         try:
-            playlists: SpotifyPlaylists = await spotify.net.get_playlists(token)
+            playlists: Playlists = await spotify.net.get_playlists(token)
             State.set_playlists(playlists)
             wx.CallAfter(UI.playlists_ctrl.populate)
             wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
@@ -116,7 +116,7 @@ class SPBackupApp(WxAsyncApp):
             playlist_id (int): the ID of the playlist too recieve
         """
         try:
-            playlist: SpotifyPlaylistInfo = await spotify.net.get_playlist(
+            playlist: Playlist = await spotify.net.get_playlist(
                 State.get_token(), playlist_id)
             State.set_playlist(playlist)
             wx.CallAfter(
@@ -148,7 +148,8 @@ class SPBackupApp(WxAsyncApp):
             url (str): the url to follow next
         """
         try:
-            playlists: SpotifyPlaylists = await spotify.net.get_playlists(token=State.get_token(), url=url)
+            playlists: Playlists = await spotify.net.get_playlists(
+                token=State.get_token(), url=url)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
         State.set_playlists(playlists)

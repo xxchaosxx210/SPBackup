@@ -1,8 +1,8 @@
 import threading
 import wx
 
-from spotify.validators.playlist_info import PlaylistInfo
-from spotify.validators.playlist_info import Tracks
+from spotify.validators.playlist import Playlist
+from spotify.validators.playlist import Tracks as PlaylistTracks
 from spotify.validators.playlists import Playlists
 
 from playlist_manager import PlaylistManager
@@ -27,7 +27,7 @@ class State:
     # holds general global state thread safe
 
     _token: str = None
-    _playlist: PlaylistInfo = None 
+    _playlist: Playlist = None 
     _lock: threading.Lock = threading.Lock()
     _playlists: Playlists = None
     playlist_manager: PlaylistManager = None
@@ -43,12 +43,12 @@ class State:
             return State._playlists
 
     @staticmethod
-    def set_playlist(playlist: PlaylistInfo):
+    def set_playlist(playlist: Playlist):
         with State._lock:
             State._playlist = playlist
     
     @staticmethod
-    def update_playlist_tracks(tracks: Tracks):
+    def update_playlist_tracks(tracks: PlaylistTracks):
         """update the tracks in the playlist info
 
         Args:
@@ -58,7 +58,7 @@ class State:
             State._playlist.tracks = tracks
     
     @staticmethod
-    def get_playlist() -> PlaylistInfo:
+    def get_playlist() -> Playlist:
         with State._lock:
             return State._playlist
     

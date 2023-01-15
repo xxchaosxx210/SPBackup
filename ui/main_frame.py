@@ -11,7 +11,7 @@ from globals.state import UI
 from globals.state import State
 import globals.logger
 
-from spotify.validators.playlist import Playlist
+from spotify.validators.playlists import Playlists
 import spotify.net
 
 import image_manager
@@ -100,7 +100,7 @@ class MainFrame(wx.Frame):
         if index == -1:
             return
         # get the playlist information to display to the console
-        playlist: Playlist = State.get_playlists().items[index]
+        playlist: Playlists = State.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
         # get the generator and iterate through
         dlg = LoadingDialog(self, playlist.tracks.total, "Loading all tracks...")
