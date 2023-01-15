@@ -89,13 +89,12 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
         self.Bind(wx.EVT_LIST_ITEM_SELECTED, self.OnItemSelected)
 
-    def populate(self):
+    def populate(self, playlists: PlaylistsItem):
         # Clear the list control
         self.clear_playlists()
         # Add the playlists to the list control
-        playlists = State.get_playlists()
         UI.playlists_toolbar.navbuttons.change_state()
-        for index, playlist in enumerate(playlists.items):
+        for index, playlist in enumerate(playlists):
             self.add_playlist(index, playlist)
     
     def clear_playlists(self):
@@ -114,7 +113,6 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
-        # Do something with the Playlist object
         app = wx.GetApp()
         playlist: PlaylistsItem = State.get_playlists().items[item_index]
         loop = asyncio.get_event_loop()

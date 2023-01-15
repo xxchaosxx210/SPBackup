@@ -96,6 +96,12 @@ class MainFrame(wx.Frame):
         pass
 
     def on_get_all_tracks_menuitem(self, evt: wx.CommandEvent):
+        asyncio.create_task(self.get_all_tracks())
+
+    async def get_all_tracks(self):
+        """debug menu - get all the tracks belonging to the selected playlist
+        """
+        # setup the dialog
         # get the first selected item from the listctrl
         index = UI.playlists_ctrl.GetFirstSelected()
         if index == -1:
@@ -104,28 +110,22 @@ class MainFrame(wx.Frame):
         playlist: Playlist = State.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
         # get the generator and iterate through
+        current_task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
         dlg = LoadingDialog(
                             self, 
                             playlist.tracks.total, 
                             "Loading all tracks...",
-                            [])
+                            [current_task])
         dlg.Show(True)
-        task: asyncio.Task = asyncio.create_task(self.get_all_tracks(
-            playlist, dlg))
-        dlg.tasks.append(task)
-
-    async def get_all_tracks(self, playlist: Playlist, progress_dialog: wx.Dialog):
-        """debug menu - get all the tracks belonging to the selected playlist
-        """
         async for item in spotify.net.get_all_track_items(
             State.get_token(), playlist.id):
             try:
-                progress_dialog.update_progress()
-                progress_dialog.append_text(text=f"Loaded {item.track.name}.")
+                dlg.update_progress()
+                dlg.append_text(text=f"Loaded {item.track.name}.")
             except (AttributeError, TypeError) as err:
                 globals.logger.console(
                     f"Error updating the progress of all tracks. {err.__str__()}", "error")
-        progress_dialog.complete()
+        dlg.complete()
     
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
         """debug menu - show a loading dialog for testing purposes
@@ -172,7 +172,7 @@ class MainFrame(wx.Frame):
             UI.playlists_spw.Unsplit(UI.playlists_ctrl)
             UI.playlists_ctrl.Disable()
         else:
-            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
+            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.tracksctrl)
             UI.playlists_ctrl.Enable()
     
     def toggle_hide_tracks(self, evt: wx.CommandEvent):
@@ -188,9 +188,9 @@ class MainFrame(wx.Frame):
             self.hide_tracks_menuitem.Check(False)
             return
         if menu.IsChecked(self.hide_tracks_menuitem.GetId()):
-            UI.playlists_spw.Unsplit(UI.playlistinfo_ctrl)
+            UI.playlists_spw.Unsplit(UI.tracksctrl)
         else:
-            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
+            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.tracksctrl)
 
 
 class MainPanel(wx.Panel):

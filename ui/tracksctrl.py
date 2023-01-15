@@ -92,12 +92,10 @@ class TracksCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.setResizeColumn(2)
         self.SetAutoLayout(True)
     
-    def populate(self):
-        playlist: spotify.validators.playlist.Playlist = \
-            State.get_playlist()
+    def populate(self, tracks: spotify.validators.playlist.Tracks):
         self.clear_items()
         UI.playlistinfo_toolbar.navbuttons.change_state()
-        for item_index, item in enumerate(playlist.tracks.items):
+        for item_index, item in enumerate(tracks.items):
             self.add_item(item_index, item)
 
     def clear_items(self):

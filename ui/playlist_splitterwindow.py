@@ -10,10 +10,10 @@ class PlaylistSplitterWindow(wx.SplitterWindow):
         super().__init__(*args, **kw, style=wx.SP_LIVE_UPDATE)
 
         UI.playlists_ctrl = PlaylistsCtrl(self)
-        UI.playlistinfo_ctrl = TracksCtrl(self)
+        UI.tracksctrl = TracksCtrl(self)
 
-        self.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
+        self.SplitHorizontally(UI.playlists_ctrl, UI.tracksctrl)
 
         UI.playlists_ctrl.SetMinSize((-1, -1))
-        UI.playlistinfo_ctrl.SetMinSize((-1, -1))
+        UI.tracksctrl.SetMinSize((-1, -1))
 

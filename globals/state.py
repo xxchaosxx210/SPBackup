@@ -14,7 +14,7 @@ class UI:
 
     main_frame: wx.Frame = None
     playlists_ctrl: wx.ListCtrl = None
-    playlistinfo_ctrl: wx.ListCtrl = None
+    tracksctrl: wx.ListCtrl = None
     playlists_toolbar: wx.Panel = None
     playlistinfo_toolbar: wx.Panel = None
     playlists_spw: wx.SplitterWindow = None

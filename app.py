@@ -34,14 +34,14 @@ class SPBackupApp(WxAsyncApp):
     def reset(self):
         """cleans up the UI and resets the global state for the Playlists
         """
-        # Set the Playlists and PlayListInfo state to None
+        # Set the Playlists and PlayList state to None
         State.set_playlist(None)
         State.set_playlists(None)
         # Disable the Buttons on the Toolbar
         UI.playlistinfo_toolbar.navbuttons.change_state()
         UI.playlists_toolbar.navbuttons.change_state()
         # Clear the ListCtrls
-        UI.playlistinfo_ctrl.DeleteAllItems()
+        UI.tracksctrl.DeleteAllItems()
         UI.playlists_ctrl.DeleteAllItems()
 
     def reauthenticate(self):
@@ -90,7 +90,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             playlists: Playlists = await spotify.net.get_playlists(token)
             State.set_playlists(playlists)
-            wx.CallAfter(UI.playlists_ctrl.populate)
+            wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
             wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
@@ -119,8 +119,7 @@ class SPBackupApp(WxAsyncApp):
             playlist: Playlist = await spotify.net.get_playlist(
                 State.get_token(), playlist_id)
             State.set_playlist(playlist)
-            wx.CallAfter(
-                UI.playlistinfo_ctrl.populate)
+            wx.CallAfter(UI.tracksctrl.populate, tracks=playlist.tracks)
         except spotify.net.SpotifyError as err:
             State.set_playlist(None)
             self.handle_spotify_error(error=err)
@@ -136,7 +135,7 @@ class SPBackupApp(WxAsyncApp):
             tracks: ExtendedTracks = \
                 await spotify.net.get_playlist_tracks_from_url(State.get_token(), url)
             State.update_playlist_tracks(tracks)
-            wx.CallAfter(UI.playlistinfo_ctrl.populate)
+            wx.CallAfter(UI.tracksctrl.populate, tracks=tracks)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
 
@@ -153,7 +152,7 @@ class SPBackupApp(WxAsyncApp):
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
         State.set_playlists(playlists)
-        wx.CallAfter(UI.playlists_ctrl.populate)
+        wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
     
     def handle_spotify_error(self, error: spotify.net.SpotifyError):
         """handle the error status codes recieved from Spotify
