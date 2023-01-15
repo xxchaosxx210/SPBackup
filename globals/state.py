@@ -58,6 +58,11 @@ class State:
             State._playlist.tracks = tracks
     
     @staticmethod
+    def get_playlist_tracks():
+        with State._lock:
+            return State._playlist.tracks
+    
+    @staticmethod
     def get_playlist() -> Playlist:
         with State._lock:
             return State._playlist

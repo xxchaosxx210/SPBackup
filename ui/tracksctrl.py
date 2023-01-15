@@ -27,19 +27,20 @@ class TracksNavButtonPanel(NavButtonPanel):
     def on_prev_button(self, event: wx.CommandEvent):
         # Handle the "prev" button press here
         playlist = State.get_playlist()
-        if playlist:
-            if playlist.tracks.previous is not None:
-                app = wx.GetApp()
-                asyncio.run(app.retrieve_tracks(playlist.tracks.previous))
+        if not playlist or playlist.tracks.previous is None:
+            return
+        app = wx.GetApp()
+        asyncio.get_event_loop().create_task(
+            app.retrieve_tracks(playlist.tracks.previous))
 
     def on_next_button(self, event: wx.CommandEvent):
         # Handle the "next" button press here
         playlist = State.get_playlist()
-        if playlist:
-            if playlist.tracks.next is not None:
-                app = wx.GetApp()
-                asyncio.get_event_loop().create_task(
-                    app.retrieve_tracks(playlist.tracks.next))
+        if not playlist or playlist.tracks.next is None:
+            return
+        app = wx.GetApp()
+        asyncio.get_event_loop().create_task(
+            app.retrieve_tracks(playlist.tracks.next))
 
     def on_backup_click(self, evt: wx.CommandEvent):
         print("Backup clicked")

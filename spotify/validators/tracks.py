@@ -95,6 +95,10 @@ class Item(BaseModel):
     @property
     def track_name(self):
         return self.track.name
+    
+    @property
+    def track_album(self):
+        return self.track.album
 
 
 class Tracks(BaseModel):
