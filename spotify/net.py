@@ -101,7 +101,8 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
     else:
         raise SpotifyError(
             response.status,
-            f"Unknown status code: {response.status}. Please check Spotify API documentation for the error",
+            f"Unknown status code: {response.status}. \
+                Please check Spotify API documentation for the error. {response.reason}",
         )
 
 
@@ -164,7 +165,8 @@ async def get_playlists(
 
     Args:
         token (str): _description_
-        url (str, optional): the url to follow. If url is empty then offset and limit is used as params
+        url (str, optional): the url to follow. If url is empty then offset \
+            and limit is used as params
         offset (int, optional): the current offset for the playlists
         limit (int, optional): limit cannot exceed 50. defaults to 5 for testing
 
@@ -226,7 +228,9 @@ async def get_playlist(
     # the fields what we want returned you add more later check the spotify.validators.playlist file for the classnames and properties returned
     # dont forget to update that file if you add or remove any more to the fields
     query_params = {
-        "fields": "id,name,tracks(items(added_at,track(album,artists,href,uri,name)),next,previous,offset,total)",
+        "fields": "id,name,tracks(\
+            items(added_at,track(album,artists,href,uri,name)),\
+                next,previous,offset,total)",
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
@@ -248,7 +252,8 @@ async def get_playlist_tracks(
     Args:
         access_token (_type_): the users authentication token
         playlist_id (_type_):
-        offset (int, optional): Specifies the first track and is used with the limit to paginate the return tracks. Defaults to 0.
+        offset (int, optional): Specifies the first track \
+            and is used with the limit to paginate the return tracks. Defaults to 0.
         limit (int, optional): the amount of tracks to return (Max=100). Defaults to 100.
 
     Returns:
