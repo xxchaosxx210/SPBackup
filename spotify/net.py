@@ -1,6 +1,7 @@
 import aiohttp
 import logging
 import asyncio
+import base64
 
 import spotify.const as const
 import spotify.validators.tracks
@@ -20,8 +21,21 @@ class SpotifyError(Exception):
         self.code = code
 
 
-def create_auth_header():
-    return {"Authorization": f'Basic {const.AUTH_HEADER.decode("utf-8")}'}
+def create_auth_header(client_id: str, client_secret: str) -> dict:
+    """The encoded client_id and client_secret header. 
+    This will be changed on release to server side only
+
+
+    Args:
+        client_id (str): the applications client id
+        client_secret (str): the applicatrions client secret
+
+    Returns:
+        dict: Authorization dict to be added to the header request
+    """
+    AUTH_HEADER = base64.b64encode(
+        f'{client_id}:{client_secret}'.encode('utf-8'))
+    return {"Authorization": f'Basic {AUTH_HEADER.decode("utf-8")}'}
 
 
 def create_auth_token_header(token: str) -> dict:
@@ -90,7 +104,7 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
             f"Unknown status code: {response.status}. Please check Spotify API documentation for the error")
 
 
-async def authorize(scopes: tuple) -> str:
+async def authorize(client_id: str, scopes: tuple) -> str:
     """authorize(scopes)
 
     Args:
@@ -104,7 +118,7 @@ async def authorize(scopes: tuple) -> str:
         "response_type": "code",
         "redirect_uri": const.REDIRECT_URI,
         "scope": " ".join(scopes),
-        "client_id": const.CLIENT_ID,
+        "client_id": client_id,
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(const.URL_AUTHORIZE, params=auth_params) as response:
@@ -113,12 +127,14 @@ async def authorize(scopes: tuple) -> str:
                 return url
             raise_spotify_exception(response)
 
-
-async def exchange_code_for_token(code: str) -> str:
+async def exchange_code_for_token(client_id: str, client_secret: str, code: str) -> str:
     """swap the auth code for a token ID
 
     Args:
-        code (str): auth code, to get this use the RedirectListener, exchange_code_for_token will be called within that thread
+        client_id (str): the applicatrions client id
+        client_secret (str): the applications client secret
+        code (str): auth code, to get this use the RedirectListener, 
+                    exchange_code_for_token will be called within that thread
 
     Returns:
         str: returns the access token used to authenticate during API calls
@@ -128,7 +144,7 @@ async def exchange_code_for_token(code: str) -> str:
         "code": code,
         "redirect_uri": const.REDIRECT_URI,
     }
-    token_headers = create_auth_header()
+    token_headers = create_auth_header(client_id, client_secret)
     async with aiohttp.ClientSession() as session:
         async with session.post(
             const.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers

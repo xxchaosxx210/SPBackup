@@ -61,7 +61,11 @@ class RedirectListener(threading.Thread):
     EVENT_SPOTIFY_ERROR = 3
     EVENT_AUTHORIZATION_ERROR = 4
 
-    def __init__(self, app_name: str, mainthread_callback: Callable[[int], any]):
+    def __init__(self, 
+                app_name: str,
+                client_id: str,
+                client_secret: str,
+                mainthread_callback: Callable[[int], any]):
         """constructor
 
         Args:
@@ -73,6 +77,8 @@ class RedirectListener(threading.Thread):
         self.stop_event = threading.Event()
         self.callback = mainthread_callback
         self.app_name = app_name
+        self.client_id = client_id
+        self.client_secret = client_secret
 
     def run(self):
         """listen on a localhost waits for a redirect link and sends a token to callback if successful
@@ -119,8 +125,10 @@ class RedirectListener(threading.Thread):
                         try:
                             # send an async request to obtain the token
                             token = spotify.net.await_on_sync_call(
-                                spotify.net.exchange_code_for_token, code=code
-                            )
+                                spotify.net.exchange_code_for_token, 
+                                client_id=self.client_id,
+                                client_secret=self.client_secret,
+                                code=code)
                             # all went well we should now have an auth token
                             self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
                         except spotify.net.SpotifyError as err:

@@ -214,12 +214,13 @@ class SPBackupApp(WxAsyncApp):
             # Prompt user to follow Url
             globals.logger.console("Response from RedirectListener: Requesting Authorization...", "info")
             loop = asyncio.new_event_loop()
-            url = loop.run_until_complete(spotify.net.authorize((
-                spotify.const.PLAYLIST_MODIFY_PUBLIC,
+            url = loop.run_until_complete(spotify.net.authorize(
+                globals.config.CLIENT_ID,
+                (spotify.const.PLAYLIST_MODIFY_PUBLIC,
                 spotify.const.PLAYLIST_MODIFY_PRIVATE,
                 spotify.const.PLAYLIST_READ_COLLABORATIVE,
-                spotify.const.PLAYLIST_READ_PRIVATE
-            )))
+                spotify.const.PLAYLIST_READ_PRIVATE)
+            ))
             wx.CallAfter(self.open_auth_dialog, url=url)
         ## Error handling
         # usually a auth error
@@ -249,7 +250,10 @@ class SPBackupApp(WxAsyncApp):
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(
-                globals.config.APP_NAME, self.on_listener_response)
+                globals.config.APP_NAME, 
+                globals.config.CLIENT_ID,
+                globals.config.CLIENT_SECRET,
+                self.on_listener_response)
             self.listener.start()
     
     def show_error(self, message: str):
