@@ -133,8 +133,8 @@ class SPBackupApp(WxAsyncApp):
             url (str): the url to follow. found in State.playlistinfo.tracks
         """
         try:
-            tracks: ExtendedTracks = await spotify.net.get_playlist_items_from_url(
-                State.get_token(), url)
+            tracks: ExtendedTracks = \
+                await spotify.net.get_playlist_tracks_from_url(State.get_token(), url)
             State.update_playlist_tracks(tracks)
             wx.CallAfter(UI.playlistinfo_ctrl.populate)
         except spotify.net.SpotifyError as err:

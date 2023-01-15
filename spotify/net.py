@@ -5,10 +5,9 @@ import base64
 
 import spotify.const as const
 import spotify.validators.tracks
-from spotify.validators.user import User
-from spotify.validators.playlist_info import PlaylistInfo
-from spotify.validators.playlist_info import Tracks
-from spotify.validators.playlists import Playlists
+import spotify.validators.user
+import spotify.validators.playlist_info
+import spotify.validators.playlists
 
 
 logger = logging.getLogger()
@@ -156,7 +155,10 @@ async def exchange_code_for_token(client_id: str, client_secret: str, code: str)
 
 
 async def get_playlists(
-    token: str, url: str = "", offset: int = 0, limit: int = 5) -> Playlists:
+                        token: str, 
+                        url: str = "", 
+                        offset: int = 0, 
+                        limit: int = 5) -> spotify.validators.playlists.Playlists:
     """requests playlists from the user account.
 
     Args:
@@ -166,7 +168,7 @@ async def get_playlists(
         limit (int, optional): limit cannot exceed 50. defaults to 5 for testing
 
     Returns:
-        Playlists: the Playlists object. Check spotify.validators.playlists for details
+        spotify.validators.playlists.Playlists
     """
     headers = create_auth_token_header(token)
     params = {}
@@ -178,18 +180,18 @@ async def get_playlists(
         async with session.get(url, headers=headers, params=params) as response:
             if response.status == const.STATUS_OK:
                 json_response = await response.json()
-                return Playlists(**json_response)
+                return spotify.validators.playlists.Playlists(**json_response)
             raise_spotify_exception(response)
 
 
-async def get_user_info(token: str) -> User:
+async def get_user_info(token: str) -> spotify.validators.user.User:
     """gets the Users details from the Spotify API
 
     Args:
         token (str): the authenticating token
 
     Returns:
-        User: the User object. check spotify.validators.user.User for details
+        spotify.validators.user.User
     """
     # Set the authorization header
     headers = create_auth_token_header(token)
@@ -203,11 +205,13 @@ async def get_user_info(token: str) -> User:
 
             # Return the user information as a dictionary
             json_response = await response.json()
-            user = User(**json_response)
+            user = spotify.validators.user.User(**json_response)
             return user
 
 
-async def get_playlist(access_token: str, playlist_id: str) -> PlaylistInfo:
+async def get_playlist(
+                        access_token: str, 
+                        playlist_id: str) -> spotify.validators.playlist_info.PlaylistInfo:
     """Retrieve a playlist from the Spotify API
 
     Args:
@@ -215,7 +219,7 @@ async def get_playlist(access_token: str, playlist_id: str) -> PlaylistInfo:
         playlist_id (str): The Spotify ID of the playlist
 
     Returns:
-        PlaylistInfo: check the spotify.validators.playlist_info.PlaylistInfo class for details
+        spotify.validators.playlist_info.PlaylistInfo
     """
     headers = create_auth_token_header(access_token)
     # the fields what we want returned you add more later check the spotify.validators.playlist_info file for the classnames and properties returned
@@ -230,12 +234,16 @@ async def get_playlist(access_token: str, playlist_id: str) -> PlaylistInfo:
             if response.status == const.STATUS_OK:
                 json_response = await response.json()
                 # sp_debug.save(".get_playlist_output.json", json_response)
-                plylist = PlaylistInfo(**json_response)
+                plylist = spotify.validators.playlist_info.PlaylistInfo(**json_response)
                 return plylist
             raise_spotify_exception(response)
 
 
-async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) -> Tracks:
+async def get_playlist_tracks(
+                                access_token, 
+                                playlist_id, 
+                                offset=0, 
+                                limit=100) -> spotify.validators.playlists.Tracks:
     """gets the users playlist tracks
 
     Args:
@@ -245,7 +253,7 @@ async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) ->
         limit (int, optional): the amount of tracks to return (Max=100). Defaults to 100.
 
     Returns:
-        Tracks: check the spotify.validators.playlist_info.Tracks class for details
+        spotify.validators.playlists.Tracks
     """
     params = {"offset": offset, "limit": limit}
     headers = create_auth_token_header(access_token)
@@ -255,15 +263,15 @@ async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) ->
         ) as response:
             if response.status == const.STATUS_OK:
                 tracks = await response.json()
-                return Tracks(**tracks)
+                return spotify.validators.playlists.Tracks(**tracks)
             raise_spotify_exception(response)
 
-async def get_all_tracks(access_token: str, playlist_id: str) -> spotify.validators.tracks.Item:
+async def get_all_track_items(access_token: str, playlist_id: str) -> spotify.validators.tracks.Item:
     url = const.URI_PLAYLIST_TRACKS(playlist_id)
     # get the first track list
     while url:
         tracks: spotify.validators.tracks = \
-            await get_playlist_items_from_url(access_token, url)
+            await get_playlist_tracks_from_url(access_token, url)
         if tracks.items:
             # loop through each track
             for item in tracks.items:
@@ -271,7 +279,7 @@ async def get_all_tracks(access_token: str, playlist_id: str) -> spotify.validat
         # more than 100. iterate again
         url =  tracks.next
 
-async def get_playlist_items_from_url(access_token: str, url: str) -> spotify.validators.tracks.Tracks:
+async def get_playlist_tracks_from_url(access_token: str, url: str) -> spotify.validators.tracks.Tracks:
     """retrieve tracks from the exact URL. Used in conjuction with get_playlist
     as PlaylistInfo.Tracks contains next and prev links to tracks from the playlist
     remember that as of the current time of writing this library that Spotify limits

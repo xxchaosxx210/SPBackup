@@ -107,7 +107,7 @@ class MainFrame(wx.Frame):
         dlg.Show(True)
         # import threading
         # threading.Thread(target=dlg.Show).start()
-        async for item in spotify.net.get_all_tracks(
+        async for item in spotify.net.get_all_track_items(
             State.get_token(), playlist.id):
             try:
                 dlg.update_progress()
