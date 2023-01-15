@@ -134,7 +134,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             tracks: ExtendedTracks = \
                 await spotify.net.get_playlist_tracks_from_url(State.get_token(), url)
-            State.update_playlist_tracks(tracks)
+            State.set_playlist(tracks)
             wx.CallAfter(UI.tracksctrl.populate, tracks=tracks)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)

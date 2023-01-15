@@ -92,6 +92,10 @@ class Item(BaseModel):
     track: Track
     video_thumbnail: VideoThumbnail
 
+    @property
+    def track_name(self):
+        return self.track.name
+
 
 class Tracks(BaseModel):
     href: str

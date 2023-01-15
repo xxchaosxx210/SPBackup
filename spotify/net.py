@@ -263,8 +263,8 @@ async def get_playlist_tracks(
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            constants.URI_PLAYLIST_TRACKS(playlist_id), headers, params=params
-        ) as response:
+            constants.URI_PLAYLIST_TRACKS(playlist_id), 
+            headers=headers, params=params) as response:
             if response.status == constants.STATUS_OK:
                 tracks = await response.json()
                 return spotify.validators.playlists.Tracks(**tracks)
