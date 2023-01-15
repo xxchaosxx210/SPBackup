@@ -3,7 +3,7 @@ import logging
 import asyncio
 import base64
 
-import spotify.const as const
+import spotify.constants as constants
 import spotify.validators.tracks
 import spotify.validators.user
 import spotify.validators.playlist_info
@@ -88,14 +88,14 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
         SpotifyError: _description_
         SpotifyError: _description_
     """
-    if response.status == const.STATUS_BAD_TOKEN:
+    if response.status == constants.STATUS_BAD_TOKEN:
         raise SpotifyError(response.status, "Bad or Expired Token. Please Re-Authenticate")
-    elif response.status == const.STATUS_BAD_OAUTH_REQUEST:
+    elif response.status == constants.STATUS_BAD_OAUTH_REQUEST:
         raise SpotifyError(
             response.status,
             "Wrong Consumer key, Bad Nonce or expired timestamp. You may need to Logout and Login into your account again",
         )
-    elif response.status == const.STATUS_LIMIT_RATE_REACHED:
+    elif response.status == constants.STATUS_LIMIT_RATE_REACHED:
         raise SpotifyError(response.status, "The App has exceeded its rate")
     else:
         raise SpotifyError(
@@ -115,13 +115,13 @@ async def authorize(client_id: str, scopes: tuple) -> str:
     # Set up the authorization request
     auth_params = {
         "response_type": "code",
-        "redirect_uri": const.REDIRECT_URI,
+        "redirect_uri": constants.REDIRECT_URI,
         "scope": " ".join(scopes),
         "client_id": client_id,
     }
     async with aiohttp.ClientSession() as session:
-        async with session.get(const.URL_AUTHORIZE, params=auth_params) as response:
-            if response.status == const.STATUS_OK:
+        async with session.get(constants.URL_AUTHORIZE, params=auth_params) as response:
+            if response.status == constants.STATUS_OK:
                 url = response.url.human_repr()
                 return url
             raise_spotify_exception(response)
@@ -141,14 +141,14 @@ async def exchange_code_for_token(client_id: str, client_secret: str, code: str)
     token_data = {
         "grant_type": "authorization_code",
         "code": code,
-        "redirect_uri": const.REDIRECT_URI,
+        "redirect_uri": constants.REDIRECT_URI,
     }
     token_headers = create_auth_header(client_id, client_secret)
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            const.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers
+            constants.URL_TOKEN_AUTHENTICATE, data=token_data, headers=token_headers
         ) as response:
-            if response.status == const.STATUS_OK:
+            if response.status == constants.STATUS_OK:
                 json_response = await response.json()
                 return json_response["access_token"]
             raise_spotify_exception(response)
@@ -173,12 +173,12 @@ async def get_playlists(
     headers = create_auth_token_header(token)
     params = {}
     if not url:
-        url = const.URI_PLAYLISTS
+        url = constants.URI_PLAYLISTS
         params = {"offset": offset, "limit": limit}
 
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers, params=params) as response:
-            if response.status == const.STATUS_OK:
+            if response.status == constants.STATUS_OK:
                 json_response = await response.json()
                 return spotify.validators.playlists.Playlists(**json_response)
             raise_spotify_exception(response)
@@ -198,9 +198,9 @@ async def get_user_info(token: str) -> spotify.validators.user.User:
 
     async with aiohttp.ClientSession() as session:
         # Send the GET request
-        async with session.get(const.URI_USER, headers=headers) as response:
+        async with session.get(constants.URI_USER, headers=headers) as response:
             # Check the status code
-            if response.status != const.STATUS_OK:
+            if response.status != constants.STATUS_OK:
                 raise_spotify_exception(response)
 
             # Return the user information as a dictionary
@@ -229,9 +229,9 @@ async def get_playlist(
     }
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            const.URI_PLAYLIST(playlist_id), headers=headers, params=query_params
+            constants.URI_PLAYLIST(playlist_id), headers=headers, params=query_params
         ) as response:
-            if response.status == const.STATUS_OK:
+            if response.status == constants.STATUS_OK:
                 json_response = await response.json()
                 # sp_debug.save(".get_playlist_output.json", json_response)
                 plylist = spotify.validators.playlist_info.PlaylistInfo(**json_response)
@@ -259,15 +259,15 @@ async def get_playlist_tracks(
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            const.URI_PLAYLIST_TRACKS(playlist_id), headers, params=params
+            constants.URI_PLAYLIST_TRACKS(playlist_id), headers, params=params
         ) as response:
-            if response.status == const.STATUS_OK:
+            if response.status == constants.STATUS_OK:
                 tracks = await response.json()
                 return spotify.validators.playlists.Tracks(**tracks)
             raise_spotify_exception(response)
 
 async def get_all_track_items(access_token: str, playlist_id: str) -> spotify.validators.tracks.Item:
-    url = const.URI_PLAYLIST_TRACKS(playlist_id)
+    url = constants.URI_PLAYLIST_TRACKS(playlist_id)
     # get the first track list
     while url:
         tracks: spotify.validators.tracks = \
@@ -296,7 +296,7 @@ async def get_playlist_tracks_from_url(access_token: str, url: str) -> spotify.v
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
-            if response.status == const.STATUS_OK:
+            if response.status == constants.STATUS_OK:
                 tracks = await response.json()
                 return spotify.validators.tracks.Tracks(**tracks)
             raise_spotify_exception(response)
