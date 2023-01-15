@@ -1,6 +1,6 @@
 import wx
-from ui.playlists_ctrl import PlaylistsCtrl
-from ui.playlist_ctrl import PlaylistCtrl
+from ui.playlistsctrl import PlaylistsCtrl
+from ui.tracksctrl import TracksCtrl
 from globals.state import UI
 
 
@@ -10,7 +10,7 @@ class PlaylistSplitterWindow(wx.SplitterWindow):
         super().__init__(*args, **kw, style=wx.SP_LIVE_UPDATE)
 
         UI.playlists_ctrl = PlaylistsCtrl(self)
-        UI.playlistinfo_ctrl = PlaylistCtrl(self)
+        UI.playlistinfo_ctrl = TracksCtrl(self)
 
         self.SplitHorizontally(UI.playlists_ctrl, UI.playlistinfo_ctrl)
 

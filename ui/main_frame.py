@@ -2,8 +2,8 @@ import wx
 import asyncio
 
 from ui.playlist_splitterwindow import PlaylistSplitterWindow
-from ui.playlist_ctrl import PlaylistToolbar
-from ui.playlists_ctrl import PlaylistsToolBar
+from ui.tracksctrl import PlaylistToolbar
+from ui.playlistsctrl import PlaylistsToolBar
 from ui.dialogs.bubbledialog import BubbleDialog
 from ui.dialogs.loading import LoadingDialog
 

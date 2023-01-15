@@ -10,7 +10,7 @@ from globals.state import (
 )
 
 
-class PlaylistNavButtonPanel(NavButtonPanel):
+class TracksNavButtonPanel(NavButtonPanel):
     def __init__(self, parent):
         super().__init__(parent)
         
@@ -53,7 +53,7 @@ class PlaylistToolbar(wx.Panel):
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.navbuttons = PlaylistNavButtonPanel(self)
+        self.navbuttons = TracksNavButtonPanel(self)
 
         h_box: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
         h_box.Add(self.navbuttons, 0, wx.ALIGN_CENTER | wx.ALL, 0)
@@ -62,7 +62,7 @@ class PlaylistToolbar(wx.Panel):
         self.SetSizer(v_box)
 
 
-class PlaylistCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
+class TracksCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
