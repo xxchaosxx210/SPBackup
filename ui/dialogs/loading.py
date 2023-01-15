@@ -7,36 +7,29 @@ class LoadingDialog(wx.Dialog):
         wx.Dialog.__init__(
             self, parent, title="Loading...", style=wx.CAPTION|wx.CLOSE)
 
-        # Create a text box
         self.textbox = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
-        # Hide the caret
-        self.textbox.SetCaret(wx.Caret(self.textbox, 0, 0))
 
         # Create wxGauge
         self.gauge = wx.Gauge(
             self, range=100, size=(250, 25), style=wx.GA_HORIZONTAL)
         self.reset(max_range, first_message)
 
-
-        # Create cancel button
         self.cancel_button = wx.Button(self, id=wx.ID_CANCEL, label="Cancel")
         self.Bind(wx.EVT_CLOSE, self.OnCancel)
 
-        # Create sizers
         main_sizer = wx.BoxSizer(wx.VERTICAL)
         h_sizer = wx.BoxSizer(wx.HORIZONTAL)
 
-        # Add gauge, textbox and cancel button to sizers
         main_sizer.Add(self.gauge, 0, wx.ALL | wx.CENTER, 5)
         main_sizer.Add(self.textbox, 1, wx.EXPAND | wx.ALL, 5)
         h_sizer.Add(self.cancel_button, 0, wx.ALL | wx.CENTER, 5)
         main_sizer.Add(h_sizer, 0, wx.ALL | wx.CENTER, 5)
+
         self.SetSizerAndFit(main_sizer)
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
         self.SetSize((400, 400))
-        # Center the dialog on screen
         self.Center()
     
     def OnClose(self, evt: wx.CommandEvent):

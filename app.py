@@ -292,7 +292,6 @@ async def run_app():
     multiprocessing.freeze_support()
     app = SPBackupApp()
     UI.main_frame = MainFrame(
-        app=app, 
         parent=None, 
         title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}")
     UI.main_frame.Show()

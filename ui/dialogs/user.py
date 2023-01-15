@@ -1,5 +1,4 @@
 import wx
-import ui.style as style
 
 from spotify.validators.user import User
 
@@ -9,34 +8,21 @@ class UserDialog(wx.Dialog):
         super().__init__(
             parent, title="User Information", style=wx.CAPTION|wx.CLOSE)
 
-        # Center the dialog to the parent
-        self.CenterOnParent()
-        
-        # Set the dialog background color
-        self.SetBackgroundColour(style.COLOUR_SPOTIFY_BACKGROUND)
-
-        DISPLAY_FONT_SIZE = wx.FONTSIZE_MEDIUM
-
-        name_label = style.create_spotify_static_text(
-            self, label="Name:", font_size=DISPLAY_FONT_SIZE)
-        name_value = style.create_spotify_static_text(
-            self, label=user.display_name, font_size=DISPLAY_FONT_SIZE)
+        name_label = wx.StaticText(self, label="Name:")
+        name_value = wx.StaticText(self, label=user.display_name)
 
         # Create the followers text
-        followers_label = style.create_spotify_static_text(
-            self, label=f"Followers:", font_size=DISPLAY_FONT_SIZE)
-        folowers_value = style.create_spotify_static_text(
-            self, label=str(user.followers.total), font_size=DISPLAY_FONT_SIZE)
+        followers_label = wx.StaticText(self, label="Followers:")
+        folowers_value = wx.StaticText(
+            self, label=str(user.followers.total))
 
         # Create the close button
-        close_button = style.create_spotify_button(
-            parent=self, id=wx.ID_CLOSE, label="Close")
+        close_button = wx.Button(parent=self, id=wx.ID_CLOSE, label="Close")
 
         # Bind the close button click event
         close_button.Bind(wx.EVT_BUTTON, self.on_close)
         # remove the ability to close the button from the dialog window
         self.Bind(wx.EVT_CLOSE, lambda *args: args)
-
 
         gs = wx.GridSizer(2, 2, 0, 0)
         gs.Add(name_label, 0, wx.ALL, 0)
@@ -53,6 +39,8 @@ class UserDialog(wx.Dialog):
 
         # Set the dialog size
         self.SetSize((300, 300))
+        # Center the dialog to the parent
+        self.CenterOnParent()
 
     def on_close(self, event):
         # Close the dialog
@@ -63,18 +51,3 @@ def create_dialog(parent: any, userinfo: User):
     dlg = UserDialog(parent, userinfo)
     dlg.ShowModal()
     dlg.Destroy()
-
-def demo():
-    # Create an application object
-    app = wx.App()
-    
-    dialog = UserDialog(None, "Conor Moore")
-
-    # Show the dialog
-    dialog.ShowModal()
-
-    # Destroy the dialog
-    dialog.Destroy()
-
-if __name__ == '__main__':
-    demo()
