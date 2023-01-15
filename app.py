@@ -11,7 +11,7 @@ import ui.dialogs.user
 
 import globals.config
 import globals.token
-import spotify.const
+import spotify.constants
 import spotify.net
 import spotify.debug
 from spotify.validators.playlists import Playlists as SpotifyPlaylists
@@ -163,12 +163,12 @@ class SPBackupApp(WxAsyncApp):
         Args:
             error (SpotifyError): exceptioon object
         """
-        if error.code == spotify.const.STATUS_BAD_TOKEN:
+        if error.code == spotify.constants.STATUS_BAD_TOKEN:
             # bad token ask for a re-authorize request from the user
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)
             globals.token.remove()
             self.start_listening_for_redirect()
-        elif error.code == spotify.const.STATUS_BAD_OAUTH_REQUEST:
+        elif error.code == spotify.constants.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
             globals.token.remove()
         else:
@@ -216,10 +216,10 @@ class SPBackupApp(WxAsyncApp):
             loop = asyncio.new_event_loop()
             url = loop.run_until_complete(spotify.net.authorize(
                 globals.config.CLIENT_ID,
-                (spotify.const.PLAYLIST_MODIFY_PUBLIC,
-                spotify.const.PLAYLIST_MODIFY_PRIVATE,
-                spotify.const.PLAYLIST_READ_COLLABORATIVE,
-                spotify.const.PLAYLIST_READ_PRIVATE)
+                (spotify.constants.PLAYLIST_MODIFY_PUBLIC,
+                spotify.constants.PLAYLIST_MODIFY_PRIVATE,
+                spotify.constants.PLAYLIST_READ_COLLABORATIVE,
+                spotify.constants.PLAYLIST_READ_PRIVATE)
             ))
             wx.CallAfter(self.open_auth_dialog, url=url)
         ## Error handling

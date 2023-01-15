@@ -21,7 +21,7 @@ class SpotifyError(Exception):
 
 
 def create_auth_header(client_id: str, client_secret: str) -> dict:
-    """The encoded client_id and client_secret header. 
+    """The encoded client_id and client_secret header.
     This will be changed on release to server side only
 
 
@@ -32,8 +32,7 @@ def create_auth_header(client_id: str, client_secret: str) -> dict:
     Returns:
         dict: Authorization dict to be added to the header request
     """
-    AUTH_HEADER = base64.b64encode(
-        f'{client_id}:{client_secret}'.encode('utf-8'))
+    AUTH_HEADER = base64.b64encode(f"{client_id}:{client_secret}".encode("utf-8"))
     return {"Authorization": f'Basic {AUTH_HEADER.decode("utf-8")}'}
 
 
@@ -89,7 +88,9 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
         SpotifyError: _description_
     """
     if response.status == constants.STATUS_BAD_TOKEN:
-        raise SpotifyError(response.status, "Bad or Expired Token. Please Re-Authenticate")
+        raise SpotifyError(
+            response.status, "Bad or Expired Token. Please Re-Authenticate"
+        )
     elif response.status == constants.STATUS_BAD_OAUTH_REQUEST:
         raise SpotifyError(
             response.status,
@@ -100,7 +101,8 @@ def raise_spotify_exception(response: aiohttp.ClientResponse):
     else:
         raise SpotifyError(
             response.status,
-            f"Unknown status code: {response.status}. Please check Spotify API documentation for the error")
+            f"Unknown status code: {response.status}. Please check Spotify API documentation for the error",
+        )
 
 
 async def authorize(client_id: str, scopes: tuple) -> str:
@@ -126,13 +128,14 @@ async def authorize(client_id: str, scopes: tuple) -> str:
                 return url
             raise_spotify_exception(response)
 
+
 async def exchange_code_for_token(client_id: str, client_secret: str, code: str) -> str:
     """swap the auth code for a token ID
 
     Args:
         client_id (str): the applicatrions client id
         client_secret (str): the applications client secret
-        code (str): auth code, to get this use the RedirectListener, 
+        code (str): auth code, to get this use the RedirectListener,
                     exchange_code_for_token will be called within that thread
 
     Returns:
@@ -155,10 +158,8 @@ async def exchange_code_for_token(client_id: str, client_secret: str, code: str)
 
 
 async def get_playlists(
-                        token: str, 
-                        url: str = "", 
-                        offset: int = 0, 
-                        limit: int = 5) -> spotify.validators.playlists.Playlists:
+    token: str, url: str = "", offset: int = 0, limit: int = 5
+) -> spotify.validators.playlists.Playlists:
     """requests playlists from the user account.
 
     Args:
@@ -210,8 +211,8 @@ async def get_user_info(token: str) -> spotify.validators.user.User:
 
 
 async def get_playlist(
-                        access_token: str, 
-                        playlist_id: str) -> spotify.validators.playlist_info.PlaylistInfo:
+    access_token: str, playlist_id: str
+) -> spotify.validators.playlist_info.PlaylistInfo:
     """Retrieve a playlist from the Spotify API
 
     Args:
@@ -240,15 +241,13 @@ async def get_playlist(
 
 
 async def get_playlist_tracks(
-                                access_token, 
-                                playlist_id, 
-                                offset=0, 
-                                limit=100) -> spotify.validators.playlists.Tracks:
+    access_token, playlist_id, offset=0, limit=100
+) -> spotify.validators.playlists.Tracks:
     """gets the users playlist tracks
 
     Args:
         access_token (_type_): the users authentication token
-        playlist_id (_type_): 
+        playlist_id (_type_):
         offset (int, optional): Specifies the first track and is used with the limit to paginate the return tracks. Defaults to 0.
         limit (int, optional): the amount of tracks to return (Max=100). Defaults to 100.
 
@@ -266,20 +265,27 @@ async def get_playlist_tracks(
                 return spotify.validators.playlists.Tracks(**tracks)
             raise_spotify_exception(response)
 
-async def get_all_track_items(access_token: str, playlist_id: str) -> spotify.validators.tracks.Item:
+
+async def get_all_track_items(
+    access_token: str, playlist_id: str
+) -> spotify.validators.tracks.Item:
     url = constants.URI_PLAYLIST_TRACKS(playlist_id)
     # get the first track list
     while url:
-        tracks: spotify.validators.tracks = \
-            await get_playlist_tracks_from_url(access_token, url)
+        tracks: spotify.validators.tracks = await get_playlist_tracks_from_url(
+            access_token, url
+        )
         if tracks.items:
             # loop through each track
             for item in tracks.items:
                 yield item
         # more than 100. iterate again
-        url =  tracks.next
+        url = tracks.next
 
-async def get_playlist_tracks_from_url(access_token: str, url: str) -> spotify.validators.tracks.Tracks:
+
+async def get_playlist_tracks_from_url(
+    access_token: str, url: str
+) -> spotify.validators.tracks.Tracks:
     """retrieve tracks from the exact URL. Used in conjuction with get_playlist
     as PlaylistInfo.Tracks contains next and prev links to tracks from the playlist
     remember that as of the current time of writing this library that Spotify limits

@@ -1,3 +1,5 @@
+# runs pyflakes. for code evaluation
+
 import os
 
 exclude_dirs = ['.venv', '.vscode', 'images', '__pycache__']
