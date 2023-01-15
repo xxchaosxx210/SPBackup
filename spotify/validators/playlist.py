@@ -1,8 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Optional
 
+
 class ExternalUrls(BaseModel):
     spotify: str
+
 
 class User(BaseModel):
     display_name: str
@@ -12,14 +14,17 @@ class User(BaseModel):
     type: str
     uri: str
 
+
 class Image(BaseModel):
     height: Optional[int]
     url: str
     width: Optional[int]
 
+
 class Tracks(BaseModel):
     href: str
     total: int
+
 
 class Playlist(BaseModel):
     collaborative: bool

@@ -1,3 +1,5 @@
+# This is the minimal Playlist information used with get_playlists
+
 from __future__ import annotations
 
 from typing import Any, List, Optional
@@ -14,6 +16,7 @@ class Image(BaseModel):
     url: str = ""
     width: Optional[int]
 
+
 # The owner of the playlist
 class Owner(BaseModel):
     display_name: str = ""
@@ -23,10 +26,12 @@ class Owner(BaseModel):
     type: str = ""
     uri: str = ""
 
+
 # basic information on the tracks
 class Tracks(BaseModel):
     href: str = ""
     total: int = 0
+
 
 # Playlist Item
 class Item(BaseModel):
