@@ -1,8 +1,6 @@
 import wx
 import image_manager
 
-import wx
-import image_manager
 
 class NavButtonPanel(wx.Panel):
 

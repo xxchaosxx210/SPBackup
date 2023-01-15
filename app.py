@@ -10,13 +10,14 @@ from ui.dialogs.auth import AuthDialog
 import ui.dialogs.user
 
 import globals.config
+import globals.token
 import spotify.const
 import spotify.net
 import spotify.debug
 from spotify.validators.playlists import Playlists as SpotifyPlaylists
 from spotify.validators.playlist_info import PlaylistInfo as SpotifyPlaylistInfo
 from spotify.validators.user import User as SpotifyUser
-from spotify.validators.playlist_info import Tracks
+from spotify.validators.tracks import Tracks as ExtendedTracks
 
 from spotify.listener import RedirectListener
 
@@ -27,7 +28,6 @@ from globals.state import (
     State,
     UI
 )
-
 
 class SPBackupApp(WxAsyncApp):
 
@@ -50,7 +50,7 @@ class SPBackupApp(WxAsyncApp):
         """
         self.reset()
         # remove the token
-        globals.config.remove()
+        globals.token.remove()
         # rerun the process of authentication
         self.run_background_auth_check()
 
@@ -59,7 +59,7 @@ class SPBackupApp(WxAsyncApp):
         else will try and load users playlists and store the global token. 
         """
         # load the token from our .token.json file
-        token: str = globals.config.load()["token"]
+        token: str = globals.token.load()["token"]
         State.set_token(token)
         if not token:
             globals.logger.console("No Token found. Requesting Authorization...", "info")
@@ -133,7 +133,8 @@ class SPBackupApp(WxAsyncApp):
             url (str): the url to follow. found in State.playlistinfo.tracks
         """
         try:
-            tracks: Tracks = await spotify.net.get_tracks_from_url(State.get_token(), url)
+            tracks: ExtendedTracks = await spotify.net.get_playlist_items_from_url(
+                State.get_token(), url)
             State.update_playlist_tracks(tracks)
             wx.CallAfter(UI.playlistinfo_ctrl.populate)
         except spotify.net.SpotifyError as err:
@@ -165,11 +166,11 @@ class SPBackupApp(WxAsyncApp):
         if error.code == spotify.const.STATUS_BAD_TOKEN:
             # bad token ask for a re-authorize request from the user
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)
-            globals.config.remove()
+            globals.token.remove()
             self.start_listening_for_redirect()
         elif error.code == spotify.const.STATUS_BAD_OAUTH_REQUEST:
             self.show_error(error.response_text)
-            globals.config.remove()
+            globals.token.remove()
         else:
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
     
@@ -187,7 +188,7 @@ class SPBackupApp(WxAsyncApp):
         if status == RedirectListener.EVENT_TOKEN_RECIEVED:
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
-            globals.config.save(value)
+            globals.token.save(value)
             State.set_token(value)
             globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
@@ -205,7 +206,7 @@ class SPBackupApp(WxAsyncApp):
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             State.set_token(None)
-            globals.config.remove()
+            globals.token.remove()
             wx.CallAfter(self.destroy_auth_dialog)
             globals.logger.console(value, "error")
         elif status == RedirectListener.EVENT_REQUESTING_AUTHORIZATION:

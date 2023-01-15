@@ -4,7 +4,6 @@ import time
 
 import spotify.debugging
 from spotify.validators.user import User as SpotifyUser
-from spotify.validators.playlist import Playlist
 
 PLAYLIST_PATHNAME = "user_backups"
 # backed up playlists
@@ -71,12 +70,13 @@ class PlaylistManager:
         try:
             os.makedirs(user_path, exist_ok=False)
             spotify.debugging.file_log(f"Could not find playlist user path creating a new one... {user_path}", "info")
-        except OSError as err:
+        except OSError:
             # path already exists
             pass
-        self.db_path = os.path.join(user_path, DATABASE_FILENAME)
-        await self.create_tables()
-        return self.db_path
+        finally:
+            self.db_path = os.path.join(user_path, DATABASE_FILENAME)
+            await self.create_tables()
+            return self.db_path
     
     async def create_tables(self):
         with sqlite3.connect(self.db_path) as conn:

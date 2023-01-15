@@ -1,3 +1,5 @@
+# The Tracks basemodel represents the https://api.spotify.com/v1/{playlistid}/tracks
+
 from __future__ import annotations
 
 from typing import Any, List, Optional

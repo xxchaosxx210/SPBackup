@@ -1,6 +1,8 @@
+# This Playlists basemodel represents the Users playlist
+
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List
 
 from pydantic import BaseModel
 

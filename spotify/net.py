@@ -3,7 +3,7 @@ import logging
 import asyncio
 
 import spotify.const as const
-from spotify.validators.tracks import Tracks
+import spotify.validators.tracks
 from spotify.validators.user import User
 from spotify.validators.playlist_info import PlaylistInfo
 from spotify.validators.playlist_info import Tracks
@@ -242,19 +242,20 @@ async def get_playlist_tracks(access_token, playlist_id, offset=0, limit=100) ->
                 return Tracks(**tracks)
             raise_spotify_exception(response)
 
-async def get_all_tracks(access_token: str, playlist_id: str):
+async def get_all_tracks(access_token: str, playlist_id: str) -> spotify.validators.tracks.Item:
     url = const.URI_PLAYLIST_TRACKS(playlist_id)
     # get the first track list
     while url:
-        tracks: Tracks = await get_tracks_from_url(access_token, url)
+        tracks: spotify.validators.tracks = \
+            await get_playlist_items_from_url(access_token, url)
         if tracks.items:
             # loop through each track
-            for track in tracks.items:
-                yield track
+            for item in tracks.items:
+                yield item
         # more than 100. iterate again
         url =  tracks.next
 
-async def get_tracks_from_url(access_token: str, url: str) -> Tracks:
+async def get_playlist_items_from_url(access_token: str, url: str) -> spotify.validators.tracks.Tracks:
     """retrieve tracks from the exact URL. Used in conjuction with get_playlist
     as PlaylistInfo.Tracks contains next and prev links to tracks from the playlist
     remember that as of the current time of writing this library that Spotify limits
@@ -266,12 +267,12 @@ async def get_tracks_from_url(access_token: str, url: str) -> Tracks:
         url (str): the tracks url to follow
 
     Returns:
-        Tracks: check the spotify.validators.playlist_info.Tracks for details
+        Tracks: check the spotify.validators.tracks.Tracks for details
     """
     headers = create_auth_token_header(access_token)
     async with aiohttp.ClientSession() as session:
         async with session.get(url, headers=headers) as response:
             if response.status == const.STATUS_OK:
                 tracks = await response.json()
-                return Tracks(**tracks)
+                return spotify.validators.tracks.Tracks(**tracks)
             raise_spotify_exception(response)

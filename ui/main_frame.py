@@ -107,13 +107,14 @@ class MainFrame(wx.Frame):
         dlg.Show(True)
         # import threading
         # threading.Thread(target=dlg.Show).start()
-        async for track in spotify.net.get_all_tracks(
+        async for item in spotify.net.get_all_tracks(
             State.get_token(), playlist.id):
             try:
                 dlg.update_progress()
-                dlg.append_text(text=f"Loaded {track.track_name}.")
+                dlg.append_text(text=f"Loaded {item.track.name}.")
             except (AttributeError, TypeError) as err:
-                print("")
+                globals.logger.console(
+                    f"Error updating the progress of all tracks. {err.__str__()}", "error")
         dlg.complete()
     
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
