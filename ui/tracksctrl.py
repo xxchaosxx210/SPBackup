@@ -5,7 +5,7 @@ import spotify.validators.playlist
 from ui.navbuttonpanel import NavButtonPanel
 
 from globals.state import (
-    State,
+    SpotifyState,
     UI
 )
 
@@ -18,7 +18,7 @@ class TracksNavButtonPanel(NavButtonPanel):
         self.restore_button.SetToolTip("Restore Tracks to this Playlist")
 
     def change_state(self):
-        playlist = State.get_playlist()
+        playlist = SpotifyState.get_playlist()
         self.next_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.next \
             else self.next_button.Enable(True)
         self.prev_button.Disable() if not playlist or not playlist.tracks or not playlist.tracks.previous \
@@ -26,7 +26,7 @@ class TracksNavButtonPanel(NavButtonPanel):
 
     def on_prev_button(self, event: wx.CommandEvent):
         # Handle the "prev" button press here
-        playlist = State.get_playlist()
+        playlist = SpotifyState.get_playlist()
         if not playlist or playlist.tracks.previous is None:
             return
         app = wx.GetApp()
@@ -35,7 +35,7 @@ class TracksNavButtonPanel(NavButtonPanel):
 
     def on_next_button(self, event: wx.CommandEvent):
         # Handle the "next" button press here
-        playlist = State.get_playlist()
+        playlist = SpotifyState.get_playlist()
         if not playlist or playlist.tracks.next is None:
             return
         app = wx.GetApp()
@@ -122,7 +122,7 @@ class TracksCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
 
         # Append artists
         offset_index: spotify.validators.playlist.Playlist = \
-            State.get_playlist().tracks.offset + item_index + 1
+            SpotifyState.get_playlist().tracks.offset + item_index + 1
         self.SetItem(row_index, 1, str(offset_index))
         self.SetItem(row_index, 2, item.track_name)
         artist_string = " / ".join(map(get_artist_name, item.track_album.artists))

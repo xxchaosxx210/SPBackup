@@ -3,7 +3,7 @@ import asyncio
 import wx.lib.mixins.listctrl as listmix
 from spotify.validators.playlists import Item as PlaylistsItem
 from globals.state import (
-    State,
+    SpotifyState,
     UI
 )
 from ui.navbuttonpanel import NavButtonPanel
@@ -17,14 +17,14 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         self.restore_button.SetToolTip("Restore Playlists")
 
     def change_state(self):
-        playlists = State.get_playlists()
+        playlists = SpotifyState.get_playlists()
         self.next_button.Disable() if not playlists or not playlists.next \
             else self.next_button.Enable(True)
         self.prev_button.Disable() if not playlists or not playlists.previous \
             else self.prev_button.Enable(True)
 
     def on_prev_button(self, event: wx.CommandEvent):
-        playlists = State.get_playlists()
+        playlists = SpotifyState.get_playlists()
         if not playlists or not playlists.previous:
             return
         app = wx.GetApp()
@@ -32,7 +32,7 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             app.retrieve_playlist_items(playlists.previous))
 
     def on_next_button(self, event: wx.CommandEvent):
-        playlists = State.get_playlists()
+        playlists = SpotifyState.get_playlists()
         if not playlists or not playlists.next:
             return
         app = wx.GetApp()
@@ -114,6 +114,6 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
         app = wx.GetApp()
-        playlist: PlaylistsItem = State.get_playlists().items[item_index]
+        playlist: PlaylistsItem = SpotifyState.get_playlists().items[item_index]
         loop = asyncio.get_event_loop()
         loop.create_task(app.retrieve_playlist(playlist.id))

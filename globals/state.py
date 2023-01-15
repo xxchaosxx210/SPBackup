@@ -40,40 +40,39 @@ class Global:
         return Global.__lock
 
 
-class User(Global):
+class UserState(Global):
 
     __token: str = None
 
     @staticmethod
     def set_token(token: str):
         with Global.get_lock():
-            User.__token = token
+            UserState.__token = token
 
     @staticmethod
     def get_token() -> str:
         with Global.get_lock():
-            return User.__token
+            return UserState.__token
 
-class State(Global):
+class SpotifyState(Global):
 
-    _playlist: Playlist = None 
-    _playlists: Playlists = None
-    playlist_manager: PlaylistManager = None
+    __playlist: Playlist = None 
+    __playlists: Playlists = None
 
     @staticmethod
     def set_playlists(playlists: Playlists):
         with Global.get_lock():
-            State._playlists = playlists
+            SpotifyState.__playlists = playlists
 
     @staticmethod
     def get_playlists() -> Playlists:
         with Global.get_lock():
-            return State._playlists
+            return SpotifyState.__playlists
 
     @staticmethod
     def set_playlist(playlist: Playlist):
         with Global.get_lock():
-            State._playlist = playlist
+            SpotifyState.__playlist = playlist
     
     @staticmethod
     def update_playlist_tracks(tracks: PlaylistTracks):
@@ -83,14 +82,14 @@ class State(Global):
             tracks (Tracks): tracks to be updated
         """
         with Global.get_lock():
-            State._playlist.tracks = tracks
+            SpotifyState.__playlist.tracks = tracks
     
     @staticmethod
     def get_playlist_tracks():
         with Global.get_lock():
-            return State._playlist.tracks
+            return SpotifyState.__playlist.tracks
     
     @staticmethod
     def get_playlist() -> Playlist:
         with Global.get_lock():
-            return State._playlist
+            return SpotifyState.__playlist

@@ -25,9 +25,9 @@ import playlist_manager
 
 import globals.logger
 from globals.state import (
-    State,
+    SpotifyState,
     UI,
-    User as UserState
+    UserState
 )
 
 class SPBackupApp(WxAsyncApp):
@@ -36,8 +36,8 @@ class SPBackupApp(WxAsyncApp):
         """cleans up the UI and resets the global state for the Playlists
         """
         # Set the Playlists and PlayList state to None
-        State.set_playlist(None)
-        State.set_playlists(None)
+        SpotifyState.set_playlist(None)
+        SpotifyState.set_playlists(None)
         # Disable the Buttons on the Toolbar
         UI.playlistinfo_toolbar.navbuttons.change_state()
         UI.playlists_toolbar.navbuttons.change_state()
@@ -79,7 +79,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             await self.retrieve_playlists(token)
             user = await spotify.net.get_user_info(token)
-            await State.playlist_manager.create_backup_directory(user)
+            await SpotifyState.__ply_mgr.create_backup_directory(user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(err)
         finally:
@@ -90,7 +90,7 @@ class SPBackupApp(WxAsyncApp):
         """
         try:
             playlists: Playlists = await spotify.net.get_playlists(token)
-            State.set_playlists(playlists)
+            SpotifyState.set_playlists(playlists)
             wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
             wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
         except spotify.net.SpotifyError as err:
@@ -119,10 +119,10 @@ class SPBackupApp(WxAsyncApp):
         try:
             playlist: Playlist = await spotify.net.get_playlist(
                 UserState.get_token(), playlist_id)
-            State.set_playlist(playlist)
+            SpotifyState.set_playlist(playlist)
             wx.CallAfter(UI.tracksctrl.populate, tracks=playlist.tracks)
         except spotify.net.SpotifyError as err:
-            State.set_playlist(None)
+            SpotifyState.set_playlist(None)
             self.handle_spotify_error(error=err)
 
     async def retrieve_tracks(self, url: str):
@@ -135,7 +135,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             tracks: ExtendedTracks = \
                 await spotify.net.get_playlist_tracks_from_url(UserState.get_token(), url)
-            State.update_playlist_tracks(tracks)
+            SpotifyState.update_playlist_tracks(tracks)
             wx.CallAfter(UI.tracksctrl.populate, tracks=tracks)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
@@ -152,7 +152,7 @@ class SPBackupApp(WxAsyncApp):
                 token=UserState.get_token(), url=url)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
-        State.set_playlists(playlists)
+        SpotifyState.set_playlists(playlists)
         wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
     
     def handle_spotify_error(self, error: spotify.net.SpotifyError):
@@ -293,7 +293,7 @@ async def run_app():
     # create our logger APP
     globals.logger.setup_logger()
 
-    State.playlist_manager = playlist_manager.PlaylistManager()
+    SpotifyState.__ply_mgr = playlist_manager.PlaylistManager()
 
     multiprocessing.freeze_support()
     app = SPBackupApp()

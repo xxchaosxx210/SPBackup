@@ -8,8 +8,8 @@ from ui.dialogs.bubbledialog import BubbleDialog
 from ui.dialogs.loading import LoadingDialog
 
 from globals.state import UI
-from globals.state import State
-from globals.state import User as UserState
+from globals.state import SpotifyState
+from globals.state import UserState
 import globals.logger
 
 from spotify.validators.playlist import Playlist
@@ -108,7 +108,7 @@ class MainFrame(wx.Frame):
         if index == -1:
             return
         # get the playlist information to display to the console
-        playlist: Playlist = State.get_playlists().items[index]
+        playlist: Playlist = SpotifyState.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
         # get the generator and iterate through
         current_task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
