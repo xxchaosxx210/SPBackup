@@ -19,7 +19,6 @@ def setup_logger() -> logging.Logger:
 
     return logger
 
-
 def console(message: str, level: str = "info"):
     logger = logging.getLogger(STREAM_LOGGER_NAME)
     if level == "info":

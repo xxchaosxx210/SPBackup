@@ -9,6 +9,7 @@ from ui.dialogs.loading import LoadingDialog
 
 from globals.state import UI
 from globals.state import State
+from globals.state import User as UserState
 import globals.logger
 
 from spotify.validators.playlist import Playlist
@@ -118,7 +119,7 @@ class MainFrame(wx.Frame):
                             [current_task])
         dlg.Show(True)
         async for item in spotify.net.get_all_track_items(
-            State.get_token(), playlist.id):
+            UserState.get_token(), playlist.id):
             try:
                 dlg.update_progress()
                 dlg.append_text(text=f"Loaded {item.track.name}.")

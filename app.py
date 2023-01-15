@@ -26,7 +26,8 @@ import playlist_manager
 import globals.logger
 from globals.state import (
     State,
-    UI
+    UI,
+    User as UserState
 )
 
 class SPBackupApp(WxAsyncApp):
@@ -60,7 +61,7 @@ class SPBackupApp(WxAsyncApp):
         """
         # load the token from our .token.json file
         token: str = globals.token.load()["token"]
-        State.set_token(token)
+        UserState.set_token(token)
         if not token:
             globals.logger.console("No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
@@ -101,7 +102,7 @@ class SPBackupApp(WxAsyncApp):
         """sends a user information request and opens a dialog with user details
         """
         try:
-            user: SpotifyUser = await spotify.net.get_user_info(State.get_token())
+            user: SpotifyUser = await spotify.net.get_user_info(UserState.get_token())
             # create a dialog with the User information
             wx.CallAfter(
                 ui.dialogs.user.create_dialog, parent=UI.main_frame, userinfo=user)
@@ -117,7 +118,7 @@ class SPBackupApp(WxAsyncApp):
         """
         try:
             playlist: Playlist = await spotify.net.get_playlist(
-                State.get_token(), playlist_id)
+                UserState.get_token(), playlist_id)
             State.set_playlist(playlist)
             wx.CallAfter(UI.tracksctrl.populate, tracks=playlist.tracks)
         except spotify.net.SpotifyError as err:
@@ -133,7 +134,7 @@ class SPBackupApp(WxAsyncApp):
         """
         try:
             tracks: ExtendedTracks = \
-                await spotify.net.get_playlist_tracks_from_url(State.get_token(), url)
+                await spotify.net.get_playlist_tracks_from_url(UserState.get_token(), url)
             State.update_playlist_tracks(tracks)
             wx.CallAfter(UI.tracksctrl.populate, tracks=tracks)
         except spotify.net.SpotifyError as err:
@@ -148,7 +149,7 @@ class SPBackupApp(WxAsyncApp):
         """
         try:
             playlists: Playlists = await spotify.net.get_playlists(
-                token=State.get_token(), url=url)
+                token=UserState.get_token(), url=url)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
         State.set_playlists(playlists)
@@ -189,7 +190,7 @@ class SPBackupApp(WxAsyncApp):
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
             globals.token.save(value)
-            State.set_token(value)
+            UserState.set_token(value)
             globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
@@ -205,7 +206,7 @@ class SPBackupApp(WxAsyncApp):
                     self.retrieve_user_and_playlists(value)))
         elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
-            State.set_token(None)
+            UserState.set_token(None)
             globals.token.remove()
             wx.CallAfter(self.destroy_auth_dialog)
             globals.logger.console(value, "error")
