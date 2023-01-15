@@ -1,5 +1,6 @@
-@REM This will build from source into an Exe
+@echo off
 
+rem Build executable
 pyinstaller --clean ^
 -n SPBackup ^
 -w ^
