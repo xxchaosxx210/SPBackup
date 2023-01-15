@@ -10,7 +10,7 @@ from playlist_manager import PlaylistManager
 
 class UI:
 
-    # store our wxcontrols
+    # store our wxcontrols instances
 
     main_frame: wx.Frame = None
     playlists_ctrl: wx.ListCtrl = None
