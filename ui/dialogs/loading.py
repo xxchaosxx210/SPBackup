@@ -1,18 +1,33 @@
 import wx
+import asyncio
 from datetime import datetime
-
+from typing import List
 
 class LoadingDialog(wx.Dialog):
-    def __init__(self, parent: wx.Window, max_range: int, first_message: str):
+    def __init__(self, 
+                 parent: wx.Window, 
+                 max_range: int, 
+                 title: str,
+                 tasks: List[asyncio.Task]):
+        """loads an async loading progress dialog with text output
+
+        Args:
+            parent (wx.Window): the parent window
+            max_range (int): max limit to load to
+            title (str): The first message to display
+            tasks (List[asyncio.Task]): list of Tasks to cancel if user pressed the cancel button
+        """
         wx.Dialog.__init__(
             self, parent, title="Loading...", style=wx.CAPTION|wx.CLOSE)
+
+        self.tasks = tasks
 
         self.textbox = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
 
         # Create wxGauge
         self.gauge = wx.Gauge(
             self, range=100, size=(250, 25), style=wx.GA_HORIZONTAL)
-        self.reset(max_range, first_message)
+        self.reset(max_range, title)
 
         self.cancel_button = wx.Button(self, id=wx.ID_CANCEL, label="Cancel")
         self.Bind(wx.EVT_CLOSE, self.OnCancel)
@@ -39,7 +54,12 @@ class LoadingDialog(wx.Dialog):
         self.reset(0, text)
         return super().ShowModal()
     
+    def cancel_tasks(self):
+        for task in self.tasks:
+            task.cancel()
+    
     def OnCancel(self, evt: wx.CommandEvent):
+        self.cancel_tasks()
         wx.CallAfter(self.EndModal(wx.ID_CANCEL))
     
     def reset(self, range: int, text: str):

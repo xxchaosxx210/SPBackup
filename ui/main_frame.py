@@ -11,7 +11,7 @@ from globals.state import UI
 from globals.state import State
 import globals.logger
 
-from spotify.validators.playlists import Playlists
+from spotify.validators.playlist import Playlist
 import spotify.net
 
 import image_manager
@@ -71,9 +71,7 @@ class MainFrame(wx.Frame):
         self.all_tracks = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Get All Tracks")
         show_loading_dlg = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Show Loading Dialog")
         self.Bind(wx.EVT_MENU, self.on_show_loading_dlg, show_loading_dlg)
-        self.Bind(wx.EVT_MENU, 
-            lambda evt : asyncio.create_task(self.on_get_all_tracks()), 
-            self.all_tracks)
+        self.Bind(wx.EVT_MENU, self.on_get_all_tracks_menuitem, self.all_tracks)
         self.debug_menu.Append(self.all_tracks)
         self.debug_menu.Append(show_loading_dlg)
 
@@ -91,31 +89,43 @@ class MainFrame(wx.Frame):
 
         # Set the frame's menu bar
         self.SetMenuBar(self.menu_bar)
-
-    async def on_get_all_tracks(self, *args):
-        """debug menu - get all the tracks belonging to the selected playlist
+    
+    def on_get_all_playlists(self, *args):
+        """debug menu - get all the playlists belonging to the user
         """
+        pass
+
+    def on_get_all_tracks_menuitem(self, evt: wx.CommandEvent):
         # get the first selected item from the listctrl
         index = UI.playlists_ctrl.GetFirstSelected()
         if index == -1:
             return
         # get the playlist information to display to the console
-        playlist: Playlists = State.get_playlists().items[index]
+        playlist: Playlist = State.get_playlists().items[index]
         globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
         # get the generator and iterate through
-        dlg = LoadingDialog(self, playlist.tracks.total, "Loading all tracks...")
+        dlg = LoadingDialog(
+                            self, 
+                            playlist.tracks.total, 
+                            "Loading all tracks...",
+                            [])
         dlg.Show(True)
-        # import threading
-        # threading.Thread(target=dlg.Show).start()
+        task: asyncio.Task = asyncio.create_task(self.get_all_tracks(
+            playlist, dlg))
+        dlg.tasks.append(task)
+
+    async def get_all_tracks(self, playlist: Playlist, progress_dialog: wx.Dialog):
+        """debug menu - get all the tracks belonging to the selected playlist
+        """
         async for item in spotify.net.get_all_track_items(
             State.get_token(), playlist.id):
             try:
-                dlg.update_progress()
-                dlg.append_text(text=f"Loaded {item.track.name}.")
+                progress_dialog.update_progress()
+                progress_dialog.append_text(text=f"Loaded {item.track.name}.")
             except (AttributeError, TypeError) as err:
                 globals.logger.console(
                     f"Error updating the progress of all tracks. {err.__str__()}", "error")
-        dlg.complete()
+        progress_dialog.complete()
     
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
         """debug menu - show a loading dialog for testing purposes
