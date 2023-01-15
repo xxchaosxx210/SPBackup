@@ -2,7 +2,7 @@ import wx
 import asyncio
 
 from ui.playlist_splitterwindow import PlaylistSplitterWindow
-from ui.playlist_ctrl import PlaylistInfoToolBar
+from ui.playlist_ctrl import PlaylistToolbar
 from ui.playlists_ctrl import PlaylistsToolBar
 from ui.dialogs.bubbledialog import BubbleDialog
 from ui.dialogs.loading import LoadingDialog
@@ -189,7 +189,7 @@ class MainPanel(wx.Panel):
 
         UI.playlists_toolbar = PlaylistsToolBar(self)
         UI.playlists_spw = PlaylistSplitterWindow(self)
-        UI.playlistinfo_toolbar = PlaylistInfoToolBar(self)
+        UI.playlistinfo_toolbar = PlaylistToolbar(self)
 
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(UI.playlists_toolbar, 0, wx.EXPAND, 0)

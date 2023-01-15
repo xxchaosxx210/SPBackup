@@ -9,7 +9,8 @@ from globals.state import (
     UI
 )
 
-class PlaylistInfoNavButtonPanel(NavButtonPanel):
+
+class PlaylistNavButtonPanel(NavButtonPanel):
     def __init__(self, parent):
         super().__init__(parent)
         
@@ -46,12 +47,13 @@ class PlaylistInfoNavButtonPanel(NavButtonPanel):
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
         
-class PlaylistInfoToolBar(wx.Panel):
+        
+class PlaylistToolbar(wx.Panel):
 
     def __init__(self, parent):
         super().__init__(parent)
 
-        self.navbuttons = PlaylistInfoNavButtonPanel(self)
+        self.navbuttons = PlaylistNavButtonPanel(self)
 
         h_box: wx.BoxSizer = wx.BoxSizer(wx.HORIZONTAL)
         h_box.Add(self.navbuttons, 0, wx.ALIGN_CENTER | wx.ALL, 0)
@@ -60,7 +62,7 @@ class PlaylistInfoToolBar(wx.Panel):
         self.SetSizer(v_box)
 
 
-class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
+class PlaylistCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
@@ -91,7 +93,8 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.SetAutoLayout(True)
     
     def populate(self):
-        playlist = State.get_playlist()
+        playlist: spotify.validators.playlist.Playlist = \
+            State.get_playlist()
         self.clear_items()
         UI.playlistinfo_toolbar.navbuttons.change_state()
         for item_index, item in enumerate(playlist.tracks.items):
@@ -100,10 +103,13 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def clear_items(self):
         self.DeleteAllItems()
     
-    def add_item(self, item_index: int, item: spotify.validators.playlist.Item):
+    def add_item(self, 
+                item_index: int, 
+                item: spotify.validators.playlist.Item):
         row_index = self.InsertItem(index=item_index, label="")
         select_item: wx.ListItem = self.GetItem(row_index, 0)
         select_item.SetState(wx.LIST_STATE_SELECTED)
+
         def get_artist_name(_artist: spotify.validators.playlist.Artist) -> str:
             """extract the name of the artists. Should be used in a map iteration function to iterate through the artists collaboration
 
@@ -114,8 +120,10 @@ class PlaylistInfoCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
                 str: the name of the artist
             """
             return _artist.name
+
         # Append artists
-        offset_index = State.get_playlist().tracks.offset + item_index + 1
+        offset_index: spotify.validators.playlist.Playlist = \
+            State.get_playlist().tracks.offset + item_index + 1
         self.SetItem(row_index, 1, str(offset_index))
         self.SetItem(row_index, 2, item.track_name)
         artist_string = " / ".join(map(get_artist_name, item.track_album.artists))

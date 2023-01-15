@@ -127,7 +127,7 @@ class SPBackupApp(WxAsyncApp):
 
     async def retrieve_tracks(self, url: str):
         """sends the next or previous link found in the PlaylistsInfo.Tracks object
-        uodates the global tracks state and loads the PlaylistInfoCtrl with the tracks
+        uodates the global tracks state and loads the PlaylistListCtrl with the tracks
 
         Args:
             url (str): the url to follow. found in State.playlistinfo.tracks
