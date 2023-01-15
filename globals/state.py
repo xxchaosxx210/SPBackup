@@ -11,9 +11,6 @@ from spotify.validators.playlist import Playlist
 from spotify.validators.playlist import Tracks as PlaylistTracks
 from spotify.validators.playlists import Playlists
 
-from playlist_manager import PlaylistManager
-
-
 class UI:
 
     """UI holds the wxwindow controls for easier reference
@@ -33,6 +30,10 @@ class UI:
 
 class Global:
 
+    """
+    holds the global lock for async
+    """
+
     __lock: threading.Lock = threading.Lock()
 
     @staticmethod
@@ -41,6 +42,10 @@ class Global:
 
 
 class UserState(Global):
+
+    """
+    currently loaded User information settings state and token
+    """
 
     __token: str = None
 
@@ -55,6 +60,10 @@ class UserState(Global):
             return UserState.__token
 
 class SpotifyState(Global):
+
+    """
+    for holding playlists and playlist
+    """
 
     __playlist: Playlist = None 
     __playlists: Playlists = None
