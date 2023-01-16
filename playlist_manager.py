@@ -90,20 +90,16 @@ class PlaylistManager:
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
 
-        # for gathering playlists and tracks
-        self.queue = asyncio.Queue()
-        self.tasks = []
-        self.done = False
 
     async def playlists(self, token: str, limit: int):
         """generator function for retrieving playlists and yielding at one playlist per time
 
         Args:
-            token (str): _description_
-            limit (int): _description_
+            token (str): the spotify access token
+            limit (int): the maximum amount of playlists per request
 
         Yields:
-            _type_: _description_
+            Playlist: the spotify.validators.playlists.Playlist object
         """
         offset = 0
         playlists = await spotify.net.get_playlists(
@@ -126,12 +122,22 @@ class PlaylistManager:
                                backup_name: str,
                                backup_description: str,
                                limit: int = 50):
+        """where the backup begins and the main coroutine task handler
+
+        Args:
+            callback (BACKUP_CALLBACK_TYPE): the callback to send data back to
+            token (str): the authenticating spotify token
+            backup_name (str): the name of the backup to be added to the database
+            backup_description (str): the description of the backup entry
+            limit (int, optional): maximum number of playlists in every HTTP response. Defaults to 50.
+        """
         # create a backup entry to the sqlite3 database
         await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
         self.tasks = []
         async for playlist in self.playlists(token, limit):
-            callback(BackupEventType.BACKUP_PLAYLIST_ADDED, {"playlist": playlist})
+            callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
+                     {"playlist": playlist})
             self.tasks.append(
                 self.insert_playlist_db(playlist))
             if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
@@ -142,14 +148,24 @@ class PlaylistManager:
             await asyncio.gather(*self.tasks)
 
         callback(BackupEventType.BACKUP_SUCCESS, {})
-    
-    async def add_backup(self, name: str, description: str):
+
+    async def add_backup(self, name: str, description: str) -> int:
+        """adds a backup entry to the database file
+
+        Args:
+            name (str): Name of the backup
+            description (str): brief description of the backup. Can be empty
+
+        Returns:
+            int: the Backup Primary Key ID
+        """
         with sqlite3.connect(self.db_path) as conn:
             cursor: sqlite3.Cursor = conn.cursor()
             cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, time.time()))
             conn.commit()
+        return 0
 
     async def insert_playlist_db(self, playlist: Playlist):
         """insert the playlist into the database file
