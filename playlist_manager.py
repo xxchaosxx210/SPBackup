@@ -67,13 +67,13 @@ class PlaylistManager:
         self.db_path: str = ""
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
-        
+
         # for gathering playlists and tracks
         self.queue = asyncio.Queue()
         self.tasks = []
         self.done = False
 
-    async def playlists(token: str, limit: int):
+    async def playlists(self, token: str, limit: int):
         """generator function for retrieving playlists and yielding at one playlist per time
 
         Args:
@@ -96,11 +96,11 @@ class PlaylistManager:
             offset += limit
             playlists = await spotify.net.get_playlists(
                 token, offset=offset, limit=limit)
-            total_playlists -= len(playlists.items) 
+            total_playlists -= len(playlists.items)
 
-    async def backup_playlists(self, 
-                                token: str,
-                                limit: int = 50):
+    async def backup_playlists(self,
+                               token: str,
+                               limit: int = 50):
         # temporary storage for holding tasks
         self.tasks = []
         async for playlist in self.playlists(token, limit):
@@ -112,11 +112,10 @@ class PlaylistManager:
                 self.tasks = []
         if self.tasks:
             await asyncio.gather(*self.tasks)
-            
-    
+
     async def insert_playlist_db(self, playlist: Playlist):
         print(playlist.name)
-            
+
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
         then it creates a sqlite database if one doesnt exist. Then it
@@ -131,7 +130,8 @@ class PlaylistManager:
         user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
         try:
             os.makedirs(user_path, exist_ok=False)
-            spotify.debugging.file_log(f"Could not find playlist user path creating a new one... {user_path}", "info")
+            spotify.debugging.file_log(
+                f"Could not find playlist user path creating a new one... {user_path}", "info")
         except OSError:
             # path already exists
             pass
@@ -139,7 +139,7 @@ class PlaylistManager:
             self.db_path = os.path.join(user_path, DATABASE_FILENAME)
             await self.create_tables()
             return self.db_path
-    
+
     async def create_tables(self):
         with sqlite3.connect(self.db_path) as conn:
             # setup the database
@@ -157,7 +157,7 @@ class PlaylistManager:
                         name TEXT,
                         description TEXT,
                         date_added INTEGER);''')
-    
+
     async def create_playlist_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''CREATE TABLE IF NOT EXISTS Playlist (
             id INTEGER PRIMARY KEY,
@@ -166,7 +166,7 @@ class PlaylistManager:
             backup_id INTEGER,
             FOREIGN KEY (backup_id) REFERENCES Backups(id));
         ''')
-    
+
     async def create_track_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS Track (
@@ -197,7 +197,7 @@ class PlaylistManager:
             name TEXT
         );
         ''')
-    
+
     async def add_backup(self, backup: dict):
         with sqlite3.connect(self.db_path) as conn:
             conn.execute('''

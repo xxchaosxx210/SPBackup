@@ -4,7 +4,8 @@ import wx.lib.mixins.listctrl as listmix
 from spotify.validators.playlists import Item as PlaylistsItem
 from globals.state import (
     SpotifyState,
-    UI
+    UI,
+    UserState
 )
 from ui.navbuttonpanel import NavButtonPanel
 
@@ -40,7 +41,11 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             app.retrieve_playlist_items(playlists.next))
 
     def on_backup_click(self, evt: wx.CommandEvent):
-        print("Backup clicked")
+        app: wx.App = wx.GetApp()
+        token = UserState.get_token()
+        if not token:
+            return
+        asyncio.create_task(app.playlist_manager.backup_playlists(token))
     
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
