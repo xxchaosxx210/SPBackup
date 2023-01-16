@@ -19,7 +19,10 @@ from spotify.validators.playlist import Playlist
 from spotify.validators.user import User as SpotifyUser
 from spotify.validators.tracks import Tracks as ExtendedTracks
 
-from spotify.listener import RedirectListener
+from spotify.listener import (
+    RedirectListener,
+    AuthListenerState
+)
 
 import playlist_manager
 
@@ -175,7 +178,7 @@ class SPBackupApp(WxAsyncApp):
         else:
             wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
     
-    def on_listener_response(self, status: int, value: any):
+    def on_listener_response(self, state: AuthListenerState, value: any):
         """response from the RedirectListener
 
         Note this is not running in the main thread or main event loop!!!
@@ -186,7 +189,7 @@ class SPBackupApp(WxAsyncApp):
             status (str): read the RedirectListener EVENT for documentation
             value (any): depends on status. If an error then it will be error object else json
         """
-        if status == RedirectListener.EVENT_TOKEN_RECIEVED:
+        if state == AuthListenerState.EVENT_TOKEN_RECIEVED:
             # We have authentication save the token and use until 401 error again and restart this process again to obtain another token
             # save the token to file
             globals.token.save(value)
@@ -204,13 +207,13 @@ class SPBackupApp(WxAsyncApp):
             wx.CallAfter(
                 lambda *args: asyncio.get_event_loop().create_task(
                     self.retrieve_user_and_playlists(value)))
-        elif status == RedirectListener.EVENT_AUTHORIZATION_ERROR:
+        elif state == AuthListenerState.EVENT_AUTHORIZATION_ERROR:
             # There was an issue with the Authorization response and HTTP parsing
             UserState.set_token(None)
             globals.token.remove()
             wx.CallAfter(self.destroy_auth_dialog)
             globals.logger.console(value, "error")
-        elif status == RedirectListener.EVENT_REQUESTING_AUTHORIZATION:
+        elif state == AuthListenerState.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
             # Prompt user to follow Url
             globals.logger.console("Response from RedirectListener: Requesting Authorization...", "info")
@@ -225,11 +228,11 @@ class SPBackupApp(WxAsyncApp):
             wx.CallAfter(self.open_auth_dialog, url=url)
         ## Error handling
         # usually a auth error
-        elif status == RedirectListener.EVENT_SPOTIFY_ERROR:
+        elif state == AuthListenerState.EVENT_SPOTIFY_ERROR:
             globals.logger.console(f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
             wx.CallAfter(UI.statusbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
-        elif status == RedirectListener.EVENT_SOCKET_ERROR:
+        elif state == AuthListenerState.EVENT_SOCKET_ERROR:
             error_message = f"Response from RedirectListener: Socket Error, Check the debug.log for more details. {value.__str__()}"
             globals.logger.console(error_message, "error")
             wx.CallAfter(UI.statusbar.SetStatusText, error_message)

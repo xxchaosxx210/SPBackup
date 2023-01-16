@@ -6,6 +6,11 @@ from typing import Callable
 import spotify.net
 from spotify import debugging
 
+from enum import(
+  Enum,
+  auto as enum_auto
+)
+
 PORT = 3000
 HOST = "localhost"
 
@@ -53,13 +58,17 @@ HTML = """
 """
 
 
+class AuthListenerState(Enum):
+
+    EVENT_SOCKET_ERROR = enum_auto()
+    EVENT_TOKEN_RECIEVED = enum_auto()
+    EVENT_REQUESTING_AUTHORIZATION = enum_auto()
+    EVENT_SPOTIFY_ERROR = enum_auto()
+    EVENT_AUTHORIZATION_ERROR = enum_auto()
+
+
 class RedirectListener(threading.Thread):
 
-    EVENT_SOCKET_ERROR = 0
-    EVENT_TOKEN_RECIEVED = 1
-    EVENT_REQUESTING_AUTHORIZATION = 2
-    EVENT_SPOTIFY_ERROR = 3
-    EVENT_AUTHORIZATION_ERROR = 4
 
     def __init__(self, 
                 app_name: str,
@@ -85,7 +94,7 @@ class RedirectListener(threading.Thread):
         change the HOST and PORT constants in the spotify.const module to change the host and port address
         Note: That this is for testing only!!!
         """
-        self.callback(RedirectListener.EVENT_REQUESTING_AUTHORIZATION, None)
+        self.callback(AuthListenerState.EVENT_REQUESTING_AUTHORIZATION, None)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.bind((HOST, PORT))
             s.listen()
@@ -110,7 +119,7 @@ class RedirectListener(threading.Thread):
                             _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
                             debugging.file_log(_error_message, "error")
                             self.callback(
-                                RedirectListener.EVENT_AUTHORIZATION_ERROR,
+                                AuthListenerState.EVENT_AUTHORIZATION_ERROR,
                                 _error_message,
                             )
                             self.stop_event.set()
@@ -130,9 +139,9 @@ class RedirectListener(threading.Thread):
                                 client_secret=self.client_secret,
                                 code=code)
                             # all went well we should now have an auth token
-                            self.callback(RedirectListener.EVENT_TOKEN_RECIEVED, token)
+                            self.callback(AuthListenerState.EVENT_TOKEN_RECIEVED, token)
                         except spotify.net.SpotifyError as err:
-                            self.callback(RedirectListener.EVENT_SPOTIFY_ERROR, err)
+                            self.callback(AuthListenerState.EVENT_SPOTIFY_ERROR, err)
                         finally:
                             self.stop_event.set()
                 except socket.error as err:
@@ -141,7 +150,7 @@ class RedirectListener(threading.Thread):
                         f"Error in RedirectListener reading from socket. {err.__str__()}",
                         "error",
                     )
-                    self.callback(RedirectListener.EVENT_SOCKET_ERROR, err)
+                    self.callback(AuthListenerState.EVENT_SOCKET_ERROR, err)
 
     def send_response(self, conn: socket.socket, html: str):
         # Set the response to an HTML page that says "Thank you"
