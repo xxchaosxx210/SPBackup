@@ -1,9 +1,17 @@
+"""
+playlist_manager.py - handles the users playlists and backs up and restores them using sqlite3
+and json
+"""
+
 import sqlite3
 import os
 import time
 
 import spotify.debugging
+import spotify.net
 from spotify.validators.user import User as SpotifyUser
+from spotify.validators.playlist import Playlist
+from spotify.validators.playlist import Playlists
 
 PLAYLIST_PATHNAME = "user_backups"
 # backed up playlists
@@ -45,16 +53,69 @@ Album:
     name: str
 """
 
+MAX_PLAYLISTS_CONNECT = 5
+MAX_TRACKS_CONNECT = 5
+
 
 class PlaylistManager:
 
     def __init__(self) -> None:
+        # settings ans setting up the database tables
         global PLAYLIST_DIR
         self.user: SpotifyUser = None
         self.db_path: str = ""
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
+        
+        # for gathering playlists and tracks
+        self.queue = asyncio.Queue()
+        self.tasks = []
+        self.done = False
+
+    async def playlists(token: str, limit: int):
+        """generator function for retrieving playlists and yielding at one playlist per time
+
+        Args:
+            token (str): _description_
+            limit (int): _description_
+
+        Yields:
+            _type_: _description_
+        """
+        offset = 0
+        playlists = await spotify.net.get_playlists(
+            token,
+            offset=offset,
+            limit=limit)
+        playlists = playlists.items
+        total_playlists = playlists.total
+        while total_playlists > 0:
+            for playlist in playlists:
+                yield playlist
+            offset += limit
+            playlists = await spotify.net.get_playlists(
+                token, offset=offset, limit=limit)
+            total_playlists -= len(playlists.items) 
+
+    async def backup_playlists(self, 
+                                token: str,
+                                limit: int = 50):
+        # temporary storage for holding tasks
+        self.tasks = []
+        async for playlist in self.playlists(token, limit):
+            self.tasks.append(
+                self.insert_playlist_db(playlist))
+            if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
+                # gather will call create_task automatically
+                await asyncio.gather(*self.tasks)
+                self.tasks = []
+        if self.tasks:
+            await asyncio.gather(*self.tasks)
+            
     
+    async def insert_playlist_db(self, playlist: Playlist):
+        print(playlist.name)
+            
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
         then it creates a sqlite database if one doesnt exist. Then it
@@ -141,6 +202,7 @@ class PlaylistManager:
             conn.execute('''
             INSERT INTO backups (name, id, date_added)
             VALUES(?, ?, ?)''', (backup["name"], 1, time.time()))
+
 
 async def _test():
     from spotify.validators.user import ExternalUrls, Followers, Image
