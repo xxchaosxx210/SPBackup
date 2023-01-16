@@ -1,6 +1,8 @@
 import wx
 import asyncio
+
 import wx.lib.mixins.listctrl as listmix
+
 from spotify.validators.playlists import Item as PlaylistsItem
 from globals.state import (
     SpotifyState,
@@ -45,8 +47,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         token = UserState.get_token()
         if not token:
             return
-        asyncio.create_task(app.playlist_manager.backup_playlists(token))
-    
+        task: asyncio.Task = app.playlist_manager.running_task
+        if not task or task.done() or task.cancelled():
+            # ok to run the backup task
+            app.playlist_manager.running_task = asyncio.create_task(
+                app.playlist_manager.backup_playlists(token))
+
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
 
@@ -77,7 +83,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         self.InsertColumn(3, "Created by")
         self.InsertColumn(4, "ID")
         self.InsertColumn(5, "Tracks amount")
-        
+
         # Set the minimum size of the widget
         self.SetMinSize((100, 200))
 
@@ -101,10 +107,10 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
         UI.playlists_toolbar.navbuttons.change_state()
         for index, playlist in enumerate(playlists):
             self.add_playlist(index, playlist)
-    
+
     def clear_playlists(self):
         self.DeleteAllItems()
-    
+
     def add_playlist(self, index, playlist: PlaylistsItem):
         self.InsertItem(index, "", index)
         item: wx.ListItem = self.GetItem(index, 0)
@@ -119,6 +125,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
         app = wx.GetApp()
-        playlist: PlaylistsItem = SpotifyState.get_playlists().items[item_index]
+        playlist: PlaylistsItem = SpotifyState.get_playlists(
+        ).items[item_index]
         loop = asyncio.get_event_loop()
         loop.create_task(app.retrieve_playlist(playlist.id))

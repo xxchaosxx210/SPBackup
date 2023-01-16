@@ -7,6 +7,10 @@ import sqlite3
 import os
 import time
 import asyncio
+from abc import (
+    ABC,
+    abstractmethod
+)
 
 import spotify.debugging
 import spotify.net
@@ -60,6 +64,8 @@ MAX_TRACKS_CONNECT = 5
 
 class PlaylistManager:
 
+    running_task: asyncio.Task = None
+
     def __init__(self) -> None:
         # settings ans setting up the database tables
         global PLAYLIST_DIR
@@ -88,10 +94,10 @@ class PlaylistManager:
             token,
             offset=offset,
             limit=limit)
-        playlists = playlists.items
+        # playlists_items = playlists.items
         total_playlists = playlists.total
         while total_playlists > 0:
-            for playlist in playlists:
+            for playlist in playlists.items:
                 yield playlist
             offset += limit
             playlists = await spotify.net.get_playlists(
