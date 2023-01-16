@@ -33,6 +33,7 @@ from globals.state import (
     UserState
 )
 
+
 class SPBackupApp(WxAsyncApp):
 
     def __init__(self, warn_on_cancel_callback=False, **kwargs):
@@ -70,13 +71,15 @@ class SPBackupApp(WxAsyncApp):
         token: str = globals.token.load()["token"]
         UserState.set_token(token)
         if not token:
-            globals.logger.console("No Token found. Requesting Authorization...", "info")
+            globals.logger.console(
+                "No Token found. Requesting Authorization...", "info")
             self.start_listening_for_redirect()
         else:
-            globals.logger.console("Token found. Retrieving Playlists from User...", "info")
+            globals.logger.console(
+                "Token found. Retrieving Playlists from User...", "info")
             loop = asyncio.get_event_loop()
             loop.create_task(self.retrieve_user_and_playlists(token))
-    
+
     async def retrieve_user_and_playlists(self, token: str):
         """gets the user information from the loaded token and also retrieved playlists
 
@@ -91,7 +94,7 @@ class SPBackupApp(WxAsyncApp):
             self.handle_spotify_error(err)
         finally:
             return
-    
+
     async def retrieve_playlists(self, token: str):
         """sends a get user playlist request and loads the Playlists listctrl if successful
         """
@@ -99,12 +102,13 @@ class SPBackupApp(WxAsyncApp):
             playlists: Playlists = await spotify.net.get_playlists(token)
             SpotifyState.set_playlists(playlists)
             wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
-            wx.CallAfter(UI.statusbar.SetStatusText, text="Loaded Playlists successfully")
+            wx.CallAfter(UI.statusbar.SetStatusText,
+                         text="Loaded Playlists successfully")
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
-        finally: 
+        finally:
             return
-    
+
     async def retrieve_user_info(self):
         """sends a user information request and opens a dialog with user details
         """
@@ -115,7 +119,7 @@ class SPBackupApp(WxAsyncApp):
                 ui.dialogs.user.create_dialog, parent=UI.main_frame, userinfo=user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(error=err)
-    
+
     async def retrieve_playlist(self, playlist_id: int):
         """sends a playlist request by ID. will set the global playlist if successful.
         Raises a SpotifyError if unsuccessful
@@ -161,7 +165,7 @@ class SPBackupApp(WxAsyncApp):
             self.handle_spotify_error(error=err)
         SpotifyState.set_playlists(playlists)
         wx.CallAfter(UI.playlists_ctrl.populate, playlists=playlists.items)
-    
+
     def handle_spotify_error(self, error: spotify.net.SpotifyError):
         """handle the error status codes recieved from Spotify
 
@@ -180,8 +184,8 @@ class SPBackupApp(WxAsyncApp):
             self.show_error(error.response_text)
             globals.token.remove()
         else:
-            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)  
-    
+            wx.CallAfter(UI.statusbar.SetStatusText, text=error.response_text)
+
     def on_listener_response(self, state: AuthListenerState, value: any):
         """response from the RedirectListener
 
@@ -198,7 +202,8 @@ class SPBackupApp(WxAsyncApp):
             # save the token to file
             globals.token.save(value)
             UserState.set_token(value)
-            globals.logger.console("Response from RedirectListener: Token recieved and saved", "info")
+            globals.logger.console(
+                "Response from RedirectListener: Token recieved and saved", "info")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             # remember that this function is being called from the local server thread
@@ -220,20 +225,22 @@ class SPBackupApp(WxAsyncApp):
         elif state == AuthListenerState.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
             # Prompt user to follow Url
-            globals.logger.console("Response from RedirectListener: Requesting Authorization...", "info")
+            globals.logger.console(
+                "Response from RedirectListener: Requesting Authorization...", "info")
             loop = asyncio.new_event_loop()
             url = loop.run_until_complete(spotify.net.authorize(
                 globals.config.CLIENT_ID,
                 (spotify.constants.PLAYLIST_MODIFY_PUBLIC,
-                spotify.constants.PLAYLIST_MODIFY_PRIVATE,
-                spotify.constants.PLAYLIST_READ_COLLABORATIVE,
-                spotify.constants.PLAYLIST_READ_PRIVATE)
+                 spotify.constants.PLAYLIST_MODIFY_PRIVATE,
+                 spotify.constants.PLAYLIST_READ_COLLABORATIVE,
+                 spotify.constants.PLAYLIST_READ_PRIVATE)
             ))
             wx.CallAfter(self.open_auth_dialog, url=url)
-        ## Error handling
+        # Error handling
         # usually a auth error
         elif state == AuthListenerState.EVENT_SPOTIFY_ERROR:
-            globals.logger.console(f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
+            globals.logger.console(
+                f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
             wx.CallAfter(UI.statusbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
         elif state == AuthListenerState.EVENT_SOCKET_ERROR:
@@ -241,14 +248,14 @@ class SPBackupApp(WxAsyncApp):
             globals.logger.console(error_message, "error")
             wx.CallAfter(UI.statusbar.SetStatusText, error_message)
             wx.CallAfter(self.destroy_auth_dialog)
-        
+
     def open_auth_dialog(self, url):
         self.auth_dialog = AuthDialog(UI.main_frame, url)
         self.auth_dialog.ShowModal()
-    
+
     def destroy_auth_dialog(self):
         self.auth_dialog.Destroy()
-    
+
     def start_listening_for_redirect(self):
         """
         sets up the RedirectListener thread. Sends a authorization request to Spotify
@@ -258,12 +265,12 @@ class SPBackupApp(WxAsyncApp):
         """
         if not hasattr(self, "listener") or not self.listener.is_alive():
             self.listener = RedirectListener(
-                globals.config.APP_NAME, 
+                globals.config.APP_NAME,
                 globals.config.CLIENT_ID,
                 globals.config.CLIENT_SECRET,
                 self.on_listener_response)
             self.listener.start()
-    
+
     def show_error(self, message: str):
         """shows a standard error box
 
@@ -271,22 +278,38 @@ class SPBackupApp(WxAsyncApp):
             message (str): anything you like
         """
         # Create the message dialog
-        dlg = wx.MessageDialog(UI.main_frame, message, "Error", wx.OK | wx.ICON_ERROR)
+        dlg = wx.MessageDialog(UI.main_frame, message,
+                               "Error", wx.OK | wx.ICON_ERROR)
         # Show the dialog and wait for the user to click "OK"
         dlg.ShowModal()
         # Destroy the dialog
         dlg.Destroy()
 
+    def playlists_backup_handler(self, event: playlist_manager.BackupEventType, data: dict):
+        """handler called from within the playlist_manager backup coroutine function
+
+        Args:
+            event (playlist_manager.BackupEventType): enumerated type event
+            data (dict): dict depending on the event will contain data related to it
+        """
+        if event == playlist_manager.BackupEventType.BACKUP_SUCCESS:
+            print("Backup has been complete")
+        elif event == playlist_manager.BackupEventType.BACKUP_ERROR:
+            print(data["error"])
+        elif event == playlist_manager.BackupEventType.BACKUP_PLAYLIST_ADDED:
+            print(f'Playlist has been added: {data["playlist"].name}')
+
 
 def add_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-d", 
-        "--debug", 
-        action="store_true", 
+        "-d",
+        "--debug",
+        action="store_true",
         default=False,
         help="enable debug mode")
     return parser.parse_args()
+
 
 async def run_app():
 
@@ -303,7 +326,7 @@ async def run_app():
     multiprocessing.freeze_support()
     app = SPBackupApp()
     UI.main_frame = MainFrame(
-        parent=None, 
+        parent=None,
         title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}")
     UI.main_frame.Show()
     app.run_background_auth_check()

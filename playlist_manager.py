@@ -7,10 +7,11 @@ import sqlite3
 import os
 import time
 import asyncio
-from abc import (
-    ABC,
-    abstractmethod
+from enum import (
+    Enum,
+    auto as enum_auto
 )
+from typing import Callable, Dict, Union
 
 import spotify.debugging
 import spotify.net
@@ -62,6 +63,21 @@ MAX_PLAYLISTS_CONNECT = 5
 MAX_TRACKS_CONNECT = 5
 
 
+class BackupEventType(Enum):
+    """for our function callback
+
+    Args:
+        Enum (int): ID of the event that has happened
+    """
+
+    BACKUP_SUCCESS = enum_auto()
+    BACKUP_ERROR = enum_auto()
+    BACKUP_PLAYLIST_ADDED = enum_auto()
+
+
+BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
+
+
 class PlaylistManager:
 
     running_task: asyncio.Task = None
@@ -105,11 +121,17 @@ class PlaylistManager:
             total_playlists -= len(playlists.items)
 
     async def backup_playlists(self,
+                               callback: BACKUP_CALLBACK_TYPE,
                                token: str,
+                               backup_name: str,
+                               backup_description: str,
                                limit: int = 50):
+        # create a backup entry to the sqlite3 database
+        await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
         self.tasks = []
         async for playlist in self.playlists(token, limit):
+            callback(BackupEventType.BACKUP_PLAYLIST_ADDED, {"playlist": playlist})
             self.tasks.append(
                 self.insert_playlist_db(playlist))
             if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
@@ -119,8 +141,24 @@ class PlaylistManager:
         if self.tasks:
             await asyncio.gather(*self.tasks)
 
+        callback(BackupEventType.BACKUP_SUCCESS, {})
+    
+    async def add_backup(self, name: str, description: str):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor: sqlite3.Cursor = conn.cursor()
+            cursor.execute('''
+            INSERT INTO Backups (name, description, date_added)
+            VALUES(?, ?, ?)''', (name, description, time.time()))
+            conn.commit()
+
     async def insert_playlist_db(self, playlist: Playlist):
-        print(playlist.name)
+        """insert the playlist into the database file
+
+        Args:
+            playlist (Playlist): the playlist object to add
+        """
+        # print(playlist.name)
+        pass
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
@@ -159,14 +197,14 @@ class PlaylistManager:
 
     async def create_backup_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''CREATE TABLE IF NOT EXISTS Backups (
-                        id INTEGER PRIMARY KEY,
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         description TEXT,
                         date_added INTEGER);''')
 
     async def create_playlist_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''CREATE TABLE IF NOT EXISTS Playlist (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             description TEXT,
             backup_id INTEGER,
@@ -176,7 +214,7 @@ class PlaylistManager:
     async def create_track_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS Track (
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             uri TEXT NOT NULL,
             name TEXT NOT NULL,
             playlist_id INTEGER,
@@ -191,7 +229,7 @@ class PlaylistManager:
     async def create_album_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS Album(
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT
         );
         ''')
@@ -199,16 +237,10 @@ class PlaylistManager:
     async def create_artists_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
         CREATE TABLE IF NOT EXISTS Artists(
-            id INTEGER PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT
         );
         ''')
-
-    async def add_backup(self, backup: dict):
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute('''
-            INSERT INTO backups (name, id, date_added)
-            VALUES(?, ?, ?)''', (backup["name"], 1, time.time()))
 
 
 async def _test():
@@ -226,9 +258,6 @@ async def _test():
     pl: PlaylistManager = PlaylistManager()
     await pl.create_backup_directory(user=user)
     await pl.create_tables()
-    # await pl.add_backup({
-    #     "name": "CPM"
-    # })
 
 if __name__ == '__main__':
     import asyncio

@@ -4,11 +4,7 @@ import asyncio
 import wx.lib.mixins.listctrl as listmix
 
 from spotify.validators.playlists import Item as PlaylistsItem
-from globals.state import (
-    SpotifyState,
-    UI,
-    UserState
-)
+from globals.state import SpotifyState, UI, UserState
 from ui.navbuttonpanel import NavButtonPanel
 
 
@@ -21,10 +17,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
 
     def change_state(self):
         playlists = SpotifyState.get_playlists()
-        self.next_button.Disable() if not playlists or not playlists.next \
-            else self.next_button.Enable(True)
-        self.prev_button.Disable() if not playlists or not playlists.previous \
-            else self.prev_button.Enable(True)
+        self.next_button.Disable() if not playlists or not playlists.next else self.next_button.Enable(
+            True
+        )
+        self.prev_button.Disable() if not playlists or not playlists.previous else self.prev_button.Enable(
+            True
+        )
 
     def on_prev_button(self, event: wx.CommandEvent):
         playlists = SpotifyState.get_playlists()
@@ -32,7 +30,8 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             return
         app = wx.GetApp()
         asyncio.get_event_loop().create_task(
-            app.retrieve_playlist_items(playlists.previous))
+            app.retrieve_playlist_items(playlists.previous)
+        )
 
     def on_next_button(self, event: wx.CommandEvent):
         playlists = SpotifyState.get_playlists()
@@ -40,7 +39,8 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             return
         app = wx.GetApp()
         asyncio.get_event_loop().create_task(
-            app.retrieve_playlist_items(playlists.next))
+            app.retrieve_playlist_items(playlists.next)
+        )
 
     def on_backup_click(self, evt: wx.CommandEvent):
         app: wx.App = wx.GetApp()
@@ -51,14 +51,19 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         if not task or task.done() or task.cancelled():
             # ok to run the backup task
             app.playlist_manager.running_task = asyncio.create_task(
-                app.playlist_manager.backup_playlists(token))
+                app.playlist_manager.backup_playlists(
+                    app.playlists_backup_handler,
+                    token,
+                    "test",
+                    "this is to test the database entry"
+                )
+            )
 
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
 
 
 class PlaylistsToolBar(wx.Panel):
-
     def __init__(self, parent):
         super().__init__(parent)
         self.navbuttons = PlaylistsNavButtonsPanel(self)
@@ -70,7 +75,6 @@ class PlaylistsToolBar(wx.Panel):
 
 
 class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
-
     def __init__(self, parent):
         wx.ListCtrl.__init__(self, parent, style=wx.LC_REPORT)
         listmix.ListCtrlAutoWidthMixin.__init__(self)
@@ -125,7 +129,6 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
         app = wx.GetApp()
-        playlist: PlaylistsItem = SpotifyState.get_playlists(
-        ).items[item_index]
+        playlist: PlaylistsItem = SpotifyState.get_playlists().items[item_index]
         loop = asyncio.get_event_loop()
         loop.create_task(app.retrieve_playlist(playlist.id))
