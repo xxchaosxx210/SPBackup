@@ -35,6 +35,10 @@ from globals.state import (
 
 class SPBackupApp(WxAsyncApp):
 
+    def __init__(self, warn_on_cancel_callback=False, **kwargs):
+        super().__init__(warn_on_cancel_callback, **kwargs)
+        self.playlist_manager = playlist_manager.PlaylistManager()
+
     def reset(self):
         """cleans up the UI and resets the global state for the Playlists
         """
@@ -82,7 +86,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             await self.retrieve_playlists(token)
             user = await spotify.net.get_user_info(token)
-            await SpotifyState.__ply_mgr.create_backup_directory(user)
+            await self.playlist_manager.create_backup_directory(user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(err)
         finally:
@@ -295,8 +299,6 @@ async def run_app():
 
     # create our logger APP
     globals.logger.setup_logger()
-
-    SpotifyState.__ply_mgr = playlist_manager.PlaylistManager()
 
     multiprocessing.freeze_support()
     app = SPBackupApp()
