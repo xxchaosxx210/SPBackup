@@ -74,9 +74,9 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=Non
     """
     def decorator(func):
         async def wrapper(*args, **kwargs):
+            generator = func(*args, **kwargs)
             for i in range(max_retries):
                 try:
-                    generator = await func(*args, **kwargs)
                     return generator
                 except (aiohttp.ClientError, asyncio.TimeoutError) as err:
                     if i < max_retries-1:
@@ -85,8 +85,11 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=Non
                         error_handler(err)
                     else:
                         raise err
-            return wrapper
-        return decorator
+        return wrapper
+    return decorator
+
+def on_error_handler(err):
+    print(err.__str__())
 
 
 class BackupEventType(Enum):
@@ -133,6 +136,7 @@ class PlaylistManager:
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
 
+    @retry_on_exception(max_retries=3, error_handler=on_error_handler)
     async def playlists(self, token: str, limit: int):
         """generator function for retrieving playlists and yielding at one playlist per time
 
