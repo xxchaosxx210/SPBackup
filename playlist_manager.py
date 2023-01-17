@@ -13,6 +13,8 @@ from enum import (
 )
 from typing import Callable, Dict, Union
 
+import aiohttp
+
 import spotify.debugging
 import spotify.net
 from spotify.validators.user import User as SpotifyUser
@@ -63,6 +65,27 @@ MAX_PLAYLISTS_CONNECT = 5
 MAX_TRACKS_CONNECT = 5
 
 
+def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=None):
+    """decorator for handling network exceptions and retries
+
+    Args:
+        max_retries (int): _description_
+        error_handler (Callable[[str],None], optional): _description_. Defaults to None.
+    """
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            for i in range(max_retries):
+                try:
+                    return await func(*args, **kwargs)
+                except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                    if error_handler:
+                        error_handler(err)
+                    else:
+                        raise err
+            return wrapper
+        return decorator
+
+
 class BackupEventType(Enum):
     """for our function callback
 
@@ -106,7 +129,6 @@ class PlaylistManager:
         self.db_path: str = ""
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
-
 
     async def playlists(self, token: str, limit: int):
         """generator function for retrieving playlists and yielding at one playlist per time
