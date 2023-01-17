@@ -65,7 +65,7 @@ MAX_PLAYLISTS_CONNECT = 5
 MAX_TRACKS_CONNECT = 5
 
 
-def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=None):
+def retry_on_exception(max_retries: int, error_handler: Callable[[str], None] = None):
     """decorator for handling network exceptions and retries
 
     Args:
@@ -74,22 +74,22 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=Non
     """
     def decorator(func):
         async def wrapper(*args, **kwargs):
-            generator = func(*args, **kwargs)
-            for i in range(max_retries):
-                try:
-                    return generator
-                except (aiohttp.ClientError, asyncio.TimeoutError) as err:
-                    if i < max_retries-1:
-                        continue
-                    if error_handler:
-                        error_handler(err)
-                    else:
-                        raise err
+            async def _wrapper():
+                for i in range(max_retries):
+                    try:
+                        async_gen = await func(*args, **kwargs)
+                        async for value in async_gen:
+                            yield value
+                    except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                        if i < max_retries-1:
+                            continue
+                        if error_handler:
+                            error_handler(err)
+                        else:
+                            raise err
+            return _wrapper()
         return wrapper
     return decorator
-
-def on_error_handler(err):
-    print(err.__str__())
 
 
 class BackupEventType(Enum):
@@ -111,17 +111,20 @@ class BackupSQlite:
 
     def __init__(self, filepath) -> None:
         self.filepath = filepath
-    
+
     def __enter__(self, *args, **kwargs) -> sqlite3.Cursor:
         self.conn = sqlite3.connect(self.filepath)
         return self.conn.cursor()
-    
+
     def __exit__(self, *args, **kwargs):
         self.conn.commit()
         self.conn.close()
 
 
 BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
+
+def on_error_handler(err: Exception):
+    print(err.__str__())
 
 
 class PlaylistManager:
@@ -181,7 +184,7 @@ class PlaylistManager:
         await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
         self.tasks = []
-        async for playlist in self.playlists(token, limit):
+        async for playlist in await self.playlists(token, limit):
             callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
                      {"playlist": playlist})
             self.tasks.append(
@@ -210,7 +213,8 @@ class PlaylistManager:
             cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, date_added))
-            cursor.execute("SELECT id from Backups WHERE date_added = ?", (date_added,))
+            cursor.execute(
+                "SELECT id from Backups WHERE date_added = ?", (date_added,))
             result: any = cursor.fetchone()[0]
             return result
 
