@@ -78,6 +78,8 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str],None]=Non
                 try:
                     return await func(*args, **kwargs)
                 except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                    if i < max_retries-1:
+                        continue
                     if error_handler:
                         error_handler(err)
                     else:
