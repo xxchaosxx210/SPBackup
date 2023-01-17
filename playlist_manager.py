@@ -14,12 +14,11 @@ from enum import (
 from typing import Callable, Dict, Union
 from types import AsyncGeneratorType
 
-import aiohttp
-
 import spotify.debugging
 import spotify.net
 from spotify.validators.user import User as SpotifyUser
 from spotify.validators.playlist import Playlist
+from spotify.validators.playlists import Item as PlaylistItem
 from spotify.validators.playlists import Playlists
 
 import globals.logger
@@ -94,7 +93,7 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str], None] = 
                         try:
                             async for value in function_instance:
                                 yield value
-                        except (aiohttp.ClientError, asyncio.TimeoutError) as err:
+                        except Exception as err:
                             if i < max_retries-1:
                                 globals.logger.console(
                                     f"Connection error (Reason: {err.__str__()}. Retrying...")
@@ -145,7 +144,7 @@ BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
 
 
 def on_error_handler(err: Exception):
-    _Log.error(f"Failed to connect. Reason: {err.__str__()}")
+    globals.logger.console(f"Failed to connect. Reason: {err.__str__()}")
 
 
 class PlaylistManager:
@@ -202,14 +201,14 @@ class PlaylistManager:
             limit (int, optional): maximum number of playlists in every HTTP response. Defaults to 50.
         """
         # create a backup entry to the sqlite3 database
-        await self.add_backup(backup_name, backup_description)
+        backup_id: int = await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
         self.tasks = []
         async for playlist in await self.playlists(token, limit):
             callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
                      {"playlist": playlist})
             self.tasks.append(
-                self.insert_playlist_db(playlist))
+                self.insert_playlist_db(playlist, backup_id))
             if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
                 # gather will call create_task automatically
                 await asyncio.gather(*self.tasks)
@@ -234,19 +233,30 @@ class PlaylistManager:
             cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, date_added))
-            cursor.execute(
-                "SELECT id from Backups WHERE date_added = ?", (date_added,))
-            result: any = cursor.fetchone()[0]
-            return result
+            # cursor.execute(
+            #     "SELECT id from Backups WHERE date_added = ?", (date_added,))
+            # result: any = cursor.fetchone()[0]
+            id: int = cursor.lastrowid
+            return id
 
-    async def insert_playlist_db(self, playlist: Playlist):
+    async def insert_playlist_db(self, item: PlaylistItem, backup_id: int) -> int:
         """insert the playlist into the database file
 
         Args:
             playlist (Playlist): the playlist object to add
+            backup_id (int): the primary key of the backup to associate to
+
+        Returns:
+            int: the ID of the playlist
         """
-        # print(playlist.name)
-        pass
+        with BackupSQlite(self.db_path) as cursor:
+            globals.logger.console(
+                f'Name: {item.name}\tTotal Songs: {item.tracks.total}')
+            cursor.execute('''
+            INSERT INTO Playlists 
+            (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
+            (?, ?, ?, ?, ?, ?)''', 
+            (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
@@ -276,7 +286,7 @@ class PlaylistManager:
         with BackupSQlite(self.db_path) as cursor:
             # setup the database
             await self.create_backup_table(cursor)
-            await self.create_playlist_table(cursor)
+            await self.create_playlists_table(cursor)
             await self.create_album_table(cursor)
             await self.create_artists_table(cursor)
             await self.create_track_table(cursor)
@@ -288,11 +298,14 @@ class PlaylistManager:
                         description TEXT,
                         date_added DATETIME NOT NULL);''')
 
-    async def create_playlist_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''CREATE TABLE IF NOT EXISTS Playlist (
+    async def create_playlists_table(self, cursor: sqlite3.Cursor):
+        cursor.execute('''CREATE TABLE IF NOT EXISTS Playlists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
+            playlist_id TEXT NOT NULL,
+            uri TEXT NOT NULL,
+            name TEXT,
             description TEXT,
+            total_songs INTEGER,
             backup_id INTEGER,
             FOREIGN KEY (backup_id) REFERENCES Backups(id));
         ''')
