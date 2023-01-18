@@ -77,7 +77,7 @@ class Track(BaseModel):
 
 
 class VideoThumbnail(BaseModel):
-    url: Any
+    url: Optional[Any]
 
 
 class Item(BaseModel):
@@ -86,7 +86,7 @@ class Item(BaseModel):
     is_local: bool
     primary_color: Any
     track: Optional[Track]
-    video_thumbnail: VideoThumbnail
+    video_thumbnail: Optional[VideoThumbnail]
 
     @property
     def track_name(self):
