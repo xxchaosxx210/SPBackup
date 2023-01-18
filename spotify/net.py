@@ -267,7 +267,7 @@ async def get_playlist_tracks(
             headers=headers, params=params) as response:
             if response.status == constants.STATUS_OK:
                 tracks = await response.json()
-                return spotify.validators.playlists.Tracks(**tracks)
+                return spotify.validators.tracks.Tracks(**tracks)
             raise_spotify_exception(response)
 
 

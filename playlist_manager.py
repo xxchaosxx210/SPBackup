@@ -20,6 +20,7 @@ from spotify.validators.user import User as SpotifyUser
 from spotify.validators.playlist import Playlist
 from spotify.validators.playlists import Item as PlaylistItem
 from spotify.validators.playlists import Playlists
+from spotify.validators.tracks import Item as TrackItem
 
 import globals.logger
 
@@ -162,7 +163,8 @@ class PlaylistManager:
     # @retry_on_exception(max_retries=3, error_handler=on_error_handler)
     async def _tracks(self, token: str, playlist_id: int, limit: int):
         offset = 0
-        tracks = await spotify.net.get_playlist_tracks(token, playlist_id, offset, limit)
+        tracks = await spotify.net.get_playlist_tracks(
+            access_token=token, playlist_id=playlist_id, offset=offset, limit=limit)
         total_tracks = tracks.total
         while total_tracks > 0:
             for track in tracks.items:
@@ -173,7 +175,7 @@ class PlaylistManager:
             total_tracks -= len(tracks.items)
 
     @retry_on_exception(max_retries=3, error_handler=on_error_handler)
-    async def _playlists(self, token: str, limit: int):
+    async def _playlists(self, token: str, limit: int) -> PlaylistItem:
         """generator function for retrieving playlists and yielding at one playlist per time
 
         Args:
@@ -184,10 +186,7 @@ class PlaylistManager:
             Playlist: the spotify.validators.playlists.Playlist object
         """
         offset = 0
-        playlists = await spotify.net.get_playlists(
-            token,
-            offset=offset,
-            limit=limit)
+        playlists = await spotify.net.get_playlists(token, offset=offset, limit=limit)
         # playlists_items = playlists.items
         total_playlists = playlists.total
         while total_playlists > 0:
@@ -220,8 +219,13 @@ class PlaylistManager:
         async for playlist in await self._playlists(token, limit):
             callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
                      {"playlist": playlist})
-            self.tasks.append(
-                self.insert_playlist_db(playlist, backup_id))
+            playlist_id = await self.insert_playlist_db(playlist, backup_id)
+            self.tasks.append(self.insert_playlist_db(playlist, backup_id))
+            async for track in self._tracks(token=token, playlist_id=playlist.id, limit=50):
+                # NEED TO FINSIH HERE
+                await track
+                self.tasks.append(self.insert_track_db(
+                    item=track, playlist_id=playlist_id))
             if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
                 # gather will call create_task automatically
                 await asyncio.gather(*self.tasks)
@@ -270,6 +274,29 @@ class PlaylistManager:
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
             (?, ?, ?, ?, ?, ?)''',
                            (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
+            playlist_id = cursor.lastrowid
+            return playlist_id
+
+    async def insert_track_db(self, item: TrackItem, playlist_id: int) -> int:
+        with BackupSQlite(self.db_path) as cursor:
+            globals.logger.console(
+                f"Track name: {item.track.name} being added into DB...")
+            # ADD THE ALBUM FIRST
+            cursor.execute('''
+            INSERT INTO Albums (name) VALUES (?)''', (item.track.album.name,))
+            album_id = cursor.lastrowid
+            artist_names = ",".join(item.track.artists)
+            # JOIN THE ARTISTS TOGETHER AND ADD THEM
+            cursor.execute('''
+            INSERT INTO Artists (name) VALUES (?)''', (artist_names,))
+            artists_id = cursor.lastrowid
+            # NOW ADD THE TRACK INFORMATION
+            cursor.execute('''
+            INSERT INTO Tracks 
+            (uri, name, playlist_id, artists_id, album_id) VALUES 
+            (?, ?, ?, ?, ?)''', (item.track.uri, item.track.name, playlist_id, artists_id, album_id))
+            track_id = cursor.lastrowid
+            return track_id
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
@@ -325,7 +352,7 @@ class PlaylistManager:
 
     async def create_track_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Track (
+        CREATE TABLE IF NOT EXISTS Tracks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             uri TEXT NOT NULL,
             name TEXT NOT NULL,
@@ -340,7 +367,7 @@ class PlaylistManager:
 
     async def create_album_table(self, cursor: sqlite3.Cursor):
         cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Album(
+        CREATE TABLE IF NOT EXISTS Albums(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT
         );
