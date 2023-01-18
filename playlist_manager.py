@@ -84,7 +84,7 @@ def retry_on_exception(max_retries: int, error_handler: Callable[[str], None] = 
                     """this is the internal async function wrapper
 
                     Raises:
-                        err: _description_
+                        err: general exception
 
                     Yields:
                         any: value (playlist|track)
