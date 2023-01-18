@@ -246,7 +246,7 @@ async def get_playlist(
 
 async def get_playlist_tracks(
     access_token, playlist_id, offset=0, limit=100
-) -> spotify.validators.playlists.Tracks:
+) -> spotify.validators.tracks.Tracks:
     """gets the users playlist tracks
 
     Args:

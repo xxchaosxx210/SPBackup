@@ -20,54 +20,50 @@ class AddedBy(BaseModel):
 
 
 class Artist(BaseModel):
-    external_urls: ExternalUrls
-    href: str
-    id: str
-    name: str
-    type: str
-    uri: str
+    external_urls: Optional[ExternalUrls]
+    href: Optional[str]
+    id: Optional[str]
+    name: Optional[str]
+    type: Optional[str]
+    uri: Optional[str]
 
 
 class Image(BaseModel):
-    height: int
+    height: Optional[int]
     url: str
-    width: int
+    width: Optional[int]
 
 
 class Album(BaseModel):
-    album_type: str
+    album_type: Optional[str]
     artists: List[Artist]
-    available_markets: List[str]
-    external_urls: ExternalUrls
-    href: str
-    id: str
-    images: List[Image]
-    name: str
-    release_date: str
-    release_date_precision: str
-    total_tracks: int
-    type: str
-    uri: str
+    available_markets: Optional[List[str]]
+    external_urls: Optional[ExternalUrls]
+    href: Optional[str]
+    id: Optional[str]
+    images: Optional[List[Image]]
+    name: Optional[str]
+    release_date: Optional[str]
+    release_date_precision: Optional[str]
+    total_tracks: Optional[int]
+    type: Optional[str]
+    uri: Optional[str]
 
 
 class ExternalIds(BaseModel):
-    isrc: str
-
-
-class ExternalUrls4(BaseModel):
-    spotify: str
+    isrc: Optional[str]
 
 
 class Track(BaseModel):
-    album: Album
-    artists: List[Artist]
+    album: Optional[Album]
+    artists: Optional[List[Artist]]
     available_markets: List[str]
     disc_number: int
     duration_ms: int
     episode: bool
     explicit: bool
     external_ids: ExternalIds
-    external_urls: ExternalUrls4
+    external_urls: ExternalUrls
     href: str
     id: str
     is_local: bool
@@ -89,7 +85,7 @@ class Item(BaseModel):
     added_by: AddedBy
     is_local: bool
     primary_color: Any
-    track: Track
+    track: Optional[Track]
     video_thumbnail: VideoThumbnail
 
     @property
