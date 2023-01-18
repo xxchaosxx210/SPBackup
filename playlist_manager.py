@@ -65,7 +65,7 @@ Album:
     name: str
 """
 
-MAX_PLAYLISTS_CONNECT = 5
+MAX_PLAYLISTS_CONNECT = 1
 MAX_TRACKS_CONNECT = 5
 
 
@@ -170,7 +170,8 @@ class PlaylistManager:
             for track in tracks.items:
                 yield track
             offset += limit
-            tracks = spotify.net.get_playlist_tracks(
+            # need to fix the bug this function is not correct
+            tracks = await spotify.net.get_playlist_tracks(
                 token, playlist_id, offset, limit)
             total_tracks -= len(tracks.items)
 
@@ -212,28 +213,36 @@ class PlaylistManager:
             backup_description (str): the description of the backup entry
             limit (int, optional): maximum number of playlists in every HTTP response. Defaults to 50.
         """
-        # create a backup entry to the sqlite3 database
-        backup_id: int = await self.add_backup(backup_name, backup_description)
-        # temporary storage for holding tasks
-        self.tasks = []
-        async for playlist in await self._playlists(token, limit):
-            callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
-                     {"playlist": playlist})
-            playlist_id = await self.insert_playlist_db(playlist, backup_id)
-            self.tasks.append(self.insert_playlist_db(playlist, backup_id))
-            async for track in self._tracks(token=token, playlist_id=playlist.id, limit=50):
-                # NEED TO FINSIH HERE
-                await track
-                self.tasks.append(self.insert_track_db(
-                    item=track, playlist_id=playlist_id))
-            if len(self.tasks) >= MAX_PLAYLISTS_CONNECT:
-                # gather will call create_task automatically
-                await asyncio.gather(*self.tasks)
-                self.tasks = []
-        if self.tasks:
-            await asyncio.gather(*self.tasks)
+        try:
+            # create a backup entry to the sqlite3 database
+            backup_id: int = await self.add_backup(backup_name, backup_description)
+            # temporary storage for holding tasks
+            self.playlist_tasks = []
+            self.track_tasks = []
+            async for playlist in await self._playlists(token, limit):
+                # callback(BackupEventType.BACKUP_PLAYLIST_ADDED, {"playlist": playlist})
+                playlist_id = await self.insert_playlist_db(playlist, backup_id)
+                self.playlist_tasks.append(self.insert_playlist_db(playlist, backup_id))
+                tracks = self._tracks(token=token, playlist_id=playlist.id, limit=50)
+                async for track_item in tracks:
+                    # self.track_tasks.append(self.insert_track_db(item=track_item, playlist_id=playlist_id))
+                    self.track_tasks.append(print(track_item.track.name))
+                if len(self.playlist_tasks) >= MAX_PLAYLISTS_CONNECT:
+                    # gather will call create_task automatically
+                    await asyncio.gather(*self.playlist_tasks)
+                    self.playlist_tasks = []
+                if len(self.track_tasks) >= MAX_TRACKS_CONNECT:
+                    # gather will call create_task automatically
+                    await asyncio.gather(*self.track_tasks)
+                    self.track_tasks = []
+            if self.playlist_tasks:
+                await asyncio.gather(*self.playlist_tasks)
+            if self.track_tasks:
+                await asyncio.gather(*self.track_tasks)
 
-        callback(BackupEventType.BACKUP_SUCCESS, {})
+            callback(BackupEventType.BACKUP_SUCCESS, {})
+        except Exception as err:
+            print(err.__str__())
 
     async def add_backup(self, name: str, description: str) -> int:
         """adds a backup entry to the database file
