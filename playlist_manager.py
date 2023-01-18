@@ -159,8 +159,21 @@ class PlaylistManager:
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
 
+    # @retry_on_exception(max_retries=3, error_handler=on_error_handler)
+    async def _tracks(self, token: str, playlist_id: int, limit: int):
+        offset = 0
+        tracks = await spotify.net.get_playlist_tracks(token, playlist_id, offset, limit)
+        total_tracks = tracks.total
+        while total_tracks > 0:
+            for track in tracks.items:
+                yield track
+            offset += limit
+            tracks = spotify.net.get_playlist_tracks(
+                token, playlist_id, offset, limit)
+            total_tracks -= len(tracks.items)
+
     @retry_on_exception(max_retries=3, error_handler=on_error_handler)
-    async def playlists(self, token: str, limit: int):
+    async def _playlists(self, token: str, limit: int):
         """generator function for retrieving playlists and yielding at one playlist per time
 
         Args:
@@ -204,7 +217,7 @@ class PlaylistManager:
         backup_id: int = await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
         self.tasks = []
-        async for playlist in await self.playlists(token, limit):
+        async for playlist in await self._playlists(token, limit):
             callback(BackupEventType.BACKUP_PLAYLIST_ADDED,
                      {"playlist": playlist})
             self.tasks.append(
@@ -255,8 +268,8 @@ class PlaylistManager:
             cursor.execute('''
             INSERT INTO Playlists 
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
-            (?, ?, ?, ?, ?, ?)''', 
-            (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
+            (?, ?, ?, ?, ?, ?)''',
+                           (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:
         """creates a folder named after the UserID if doesnt exist
