@@ -45,21 +45,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
     def on_backup_click(self, evt: wx.CommandEvent):
         app: wx.App = wx.GetApp()
         token = UserState.get_token()
-        if not token:
+        task: asyncio.Task = app.playlist_manager.running_task
+        if not token or task and not (task.done() or task.cancelled()):
+            # bad token or task is running ignore the button press
             return
-        # task: asyncio.Task = app.playlist_manager.running_task
-        # if not task or task.done() or task.cancelled():
-        #     # ok to run the backup task
-        #     app.playlist_manager.running_task = asyncio.create_task(
-        #         app.playlist_manager.backup_playlists(
-        #             app.playlists_backup_handler,
-        #             token,
-        #             "test",
-        #             "this is to test the database entry"
-        #         )
-        #     )
-        import playlist_manager
-        asyncio.create_task(playlist_manager.backup_the_playlists(token))
+        app.playlist_manager.running_task = asyncio.create_task(
+            app.playlist_manager.backup_playlists(token))
 
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")

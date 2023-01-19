@@ -69,10 +69,6 @@ Album:
     name: str
 """
 
-MAX_PLAYLISTS_CONNECT = 5
-MAX_TRACKS_CONNECT = 5
-
-
 class BackupEventType(Enum):
     """for our function callback
 
@@ -82,6 +78,7 @@ class BackupEventType(Enum):
 
     BACKUP_SUCCESS = enum_auto()
     BACKUP_ERROR = enum_auto()
+    DATABASE_ERROR = enum_auto()
     BACKUP_PLAYLIST_ADDED = enum_auto()
     BACKUP_PLAYLIST_STARTED = enum_auto()
     BACKUP_PLAYLIST_SUCCESS = enum_auto()
@@ -89,7 +86,10 @@ class BackupEventType(Enum):
     BACKUP_TRACKS_STARTED = enum_auto()
     BACKUP_TRACKS_SUCCESS = enum_auto()
     BACKUP_TRACKS_ERROR = enum_auto()
-    BACKUP_TRACKS_ADDED = enum_auto()
+    BACKUP_TRACK_ADDED = enum_auto()
+
+
+BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
 
 
 class BackupSQlite:
@@ -97,8 +97,9 @@ class BackupSQlite:
     """Backup Context Manager for connecting to the database
     """
 
-    def __init__(self, filepath) -> None:
+    def __init__(self, filepath, error_handler) -> None:
         self.filepath = filepath
+        self.error_handler = error_handler
 
     def __enter__(self, *args, **kwargs) -> sqlite3.Cursor:
         self.conn = sqlite3.connect(self.filepath)
@@ -107,13 +108,47 @@ class BackupSQlite:
     def __exit__(self, type: Exception, value: any, exception: object):
         if type:
             message = f'Error handling SQlite IO: {type}, {value}, {exception}'
-            globals.logger.console(message, "error")
+            self.error_handler(message)
         self.conn.commit()
         self.conn.close()
         return True
 
 
-BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
+def retry_on_limit_exceeded(delay: int, timeout_factor: float):
+    """retries if spotify responds with limit exceeded code
+    will sleep for delay period timeout_factor gets added on everytime
+    the response is 428 code
+
+    Args:
+        delay (int): the start delay in seconds
+        timeout_factor (float): the timeout factor to be added on after every unsuccessful request
+    """
+    def decorator(func):
+        async def wrapper(*args, **kwargs):
+            # decorator arguments need to be declared in this local scope
+            nonlocal delay
+            nonlocal timeout_factor
+            default_delay = delay
+            # infinte loop may change this later on but for now the function will keep
+            # looping on every unsuccessful 428 code resquest
+            while True:
+                try:
+                    result = await func(*args, **kwargs)
+                    delay = default_delay
+                    return result
+                except Exception as e:
+                    # check for a maximum limit exceeded from the server
+                    if isinstance(e, spotify.net.SpotifyError) and \
+                            e.code == spotify.constants.STATUS_LIMIT_RATE_REACHED:
+                        task_name: str = asyncio.current_task().get_name()
+                        globals.logger.console(
+                            f"Limit reached on Task {task_name}. Waiting {delay} seconds for next retry request...")
+                        await asyncio.sleep(delay)
+                        delay += timeout_factor
+                    else:
+                        raise e
+        return wrapper
+    return decorator
 
 
 class PlaylistManager:
@@ -127,7 +162,111 @@ class PlaylistManager:
         self.db_path: str = ""
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
+        # main callback handler
         self.app_callback: BACKUP_CALLBACK_TYPE = None
+        self.token: str = ""
+        self.playlist_request_limit = 50
+        self.tracks_request_limit = 50
+        self.max_playlists_tasks = 5
+        self.max_tracks_tasks = 5
+
+    async def backup_playlists(self, token: str, callback: BACKUP_CALLBACK_TYPE):
+        """the start of the backup process. Call this from within the main thread
+
+        Args:
+            token (str): auth token
+            callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
+        """
+        self.app_callback = callback
+        self.token = token
+        # insert the backup table here
+        playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
+        await self.handle_playlists(
+            playlist_info=playlists_info, token=token, limit=50)
+        globals.logger.console("All complete")
+
+    @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
+    async def get_playlists_with_retry(self, *args, **kwargs) -> Playlists:
+        return await spotify.net.get_playlists(*args, **kwargs)
+
+    @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
+    async def get_tracks_with_retry(self, *args, **kwargs) -> Tracks:
+        return await spotify.net.get_playlist_tracks(*args, **kwargs)
+
+    async def fetch_and_insert_tracks(
+            self,
+            token: str,
+            playlist_id: str,
+            offset: int,
+            limit_per_request: int):
+        """get the next tracks listing from the offset and loop through each track and store to
+        the database
+
+        Args:
+            token (str): access token
+            playlist_id (str): ID of the playlist to get the tracks from
+            offset (int): the current offset
+            limit_per_request (int): the amount of tracks to return (Maximum is 50)
+        """
+        # globals.logger.console(
+        #     f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
+        tracks = await self.get_tracks_with_retry(
+            access_token=token, playlist_id=playlist_id, offset=offset, limit=limit_per_request
+        )
+        # insert into database here
+        for item in tracks.items:
+            # globals.logger.console(item.track.name)
+            pass
+
+    async def handle_tracks(
+        self, playlist_item: PlaylistItem, token: str, limit_per_request: int):
+        """is the tracks handler for the current playlist that requires pagination
+        change self.max_tracks_tasks to increase or decrease the amount of connections
+
+        Args:
+            playlist_item (PlaylistItem): the playlist item to get the track listings from
+            token (str): the access token
+            limit_per_request (int): the amount of tracks to return from the request
+        """
+        # keeps track of the loop offset and checks limit and total
+        # creates a new fetch_and_insert_tracks
+        offset = 0
+        fetch_tasks = []
+        for tracks_index in range(playlist_item.tracks.total):
+            loop = asyncio.get_event_loop()
+            fetch_tasks.append(loop.create_task(self.fetch_and_insert_tracks(
+                token, playlist_item.id, offset, limit_per_request)))
+            if len(fetch_tasks) >= self.max_tracks_tasks:
+                result = asyncio.gather(*fetch_tasks)
+                await result
+                fetch_tasks = []
+                offset += limit_per_request
+        if fetch_tasks:
+            await asyncio.gather(*fetch_tasks)
+
+    async def fetch_and_insert_playlists(self, token, offset, limit):
+        playlists = await self.get_playlists_with_retry(
+            token=token, url="", offset=offset, limit=limit)
+        for playlist_item in playlists.items:
+            await self.handle_tracks(playlist_item, token, limit)
+
+    async def handle_playlists(self, playlist_info: Playlists, token: str, limit=50):
+        offset = 0
+        tasks = []
+        for index in range(playlist_info.total):
+            loop = asyncio.get_event_loop()
+            tasks.append(loop.create_task(
+                self.fetch_and_insert_playlists(token, offset, limit)))
+            if len(tasks) >= self.max_playlists_tasks:
+                await asyncio.gather(*tasks)
+                tasks = []
+                offset += limit
+        if tasks:
+            await asyncio.gather(*tasks)
+
+    
+    def on_sqlite_error(self, message: str):
+        self.app_callback()
 
 
     async def add_backup(self, name: str, description: str) -> int:
@@ -275,132 +414,3 @@ class PlaylistManager:
             name TEXT
         );
         ''')
-
-
-def retry_on_limit_exceeded(delay: int, timeout_factor: float):
-    """retries if spotify responds with limit exceeded code
-    will sleep for delay period timeout_factor gets added on everytime
-    the response is 428 code
-
-    Args:
-        delay (int): the start delay in seconds
-        timeout_factor (float): the timeout factor to be added on after every unsuccessful request
-    """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            # decorator arguments need to be declared in this local scope
-            nonlocal delay
-            nonlocal timeout_factor
-            default_delay = delay
-            # infinte loop may change this later on but for now the function will keep
-            # looping on every unsuccessful 428 code resquest
-            while True:
-                try:
-                    result = await func(*args, **kwargs)
-                    delay = default_delay
-                    return result
-                except Exception as e:
-                    # check for a maximum limit exceeded from the server
-                    if isinstance(e, spotify.net.SpotifyError) and \
-                            e.code == spotify.constants.STATUS_LIMIT_RATE_REACHED:
-                        task_name: str = asyncio.current_task().get_name()
-                        globals.logger.console(
-                            f"Limit reached on Task {task_name}. Waiting {delay} seconds for next retry request...")
-                        await asyncio.sleep(delay)
-                        delay += timeout_factor
-                    else:
-                        raise e
-        return wrapper
-    return decorator
-
-# wrapper functions for the decorator maximum limit exceeded
-
-
-@retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
-async def get_playlists_with_retry(*args, **kwargs) -> Playlists:
-    return await spotify.net.get_playlists(*args, **kwargs)
-
-
-@retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
-async def get_tracks_with_retry(*args, **kwargs) -> Tracks:
-    return await spotify.net.get_playlist_tracks(*args, **kwargs)
-
-
-async def fetch_and_insert_tracks(
-        token: str,
-        playlist_id: str,
-        offset: int,
-        limit_per_request: int):
-    """get the next tracks listing from the offset and loop through each track and store to
-    the database
-
-    Args:
-        token (str): access token
-        playlist_id (str): ID of the playlist to get the tracks from
-        offset (int): the current offset
-        limit_per_request (int): the amount of tracks to return (Maximum is 50)
-    """
-    # globals.logger.console(
-    #     f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
-    tracks = await get_tracks_with_retry(
-        access_token=token, playlist_id=playlist_id, offset=offset, limit=limit_per_request
-    )
-    # insert into database here
-    for item in tracks.items:
-        # globals.logger.console(item.track.name)
-        pass
-
-
-async def handle_tracks(playlist_item: PlaylistItem, token: str, limit_per_request: int):
-    """is the tracks handler for the current playlist that requires pagination
-    change MAX_TRACKS_CONNECT to increase or decrease the amount of connections
-
-    Args:
-        playlist_item (PlaylistItem): the playlist item to get the track listings from
-        token (str): the access token
-        limit_per_request (int): the amount of tracks to return from the request
-    """
-    # keeps track of the loop offset and checks limit and total
-    # creates a new fetch_and_insert_tracks
-    offset = 0
-    fetch_tasks = []
-    for tracks_index in range(playlist_item.tracks.total):
-        loop = asyncio.get_event_loop()
-        fetch_tasks.append(loop.create_task(fetch_and_insert_tracks(
-            token, playlist_item.id, offset, limit_per_request)))
-        if len(fetch_tasks) >= MAX_TRACKS_CONNECT:
-            result = asyncio.gather(*fetch_tasks)
-            await result
-            fetch_tasks = []
-            offset += limit_per_request
-    if fetch_tasks:
-        await asyncio.gather(*fetch_tasks)
-
-
-async def fetch_and_insert_playlists(token, offset, limit):
-    playlists = await get_playlists_with_retry(
-        token=token, url="", offset=offset, limit=limit)
-    for playlist_item in playlists.items:
-        await handle_tracks(playlist_item, token, limit)
-
-
-async def handle_playlists(playlist_info: Playlists, token: str, limit=50):
-    offset = 0
-    tasks = []
-    for index in range(playlist_info.total):
-        loop = asyncio.get_event_loop()
-        tasks.append(loop.create_task(
-            fetch_and_insert_playlists(token, offset, limit)))
-        if len(tasks) >= MAX_PLAYLISTS_CONNECT:
-            await asyncio.gather(*tasks)
-            tasks = []
-            offset += limit
-    if tasks:
-        await asyncio.gather(*tasks)
-
-
-async def backup_the_playlists(token: str):
-    # insert the backup table here
-    playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
-    await handle_playlists(playlist_info=playlists_info, token=token, limit=50)
-    globals.logger.console("All complete")
