@@ -16,13 +16,11 @@ from typing import (
     Dict,
     Union
 )
-from types import AsyncGeneratorType
 
 import spotify.debugging
 import spotify.net
 import spotify.constants
 from spotify.validators.user import User as SpotifyUser
-from spotify.validators.playlist import Playlist
 from spotify.validators.playlists import Item as PlaylistItem
 from spotify.validators.playlists import Playlists
 from spotify.validators.tracks import Item as TrackItem
@@ -75,49 +73,6 @@ MAX_PLAYLISTS_CONNECT = 5
 MAX_TRACKS_CONNECT = 5
 
 
-def retry_on_exception(max_retries: int, error_handler: Callable[[str], None] = None):
-    """decorator for handling network exceptions and retries
-
-    Args:
-        max_retries (int): _description_
-        error_handler (Callable[[str],None], optional): _description_. Defaults to None.
-    """
-    def decorator(func):
-        async def wrapper(*args, **kwargs):
-            function_instance = func(*args, **kwargs)
-            # check if the function is the generator function
-            if isinstance(function_instance, AsyncGeneratorType):
-                async def _wrapper():
-                    """this is the internal async function wrapper
-
-                    Raises:
-                        err: general exception
-
-                    Yields:
-                        any: value (playlist|track)
-                    """
-                    for i in range(max_retries):
-                        try:
-                            async for value in function_instance:
-                                yield value
-                        except Exception as err:
-                            if i < max_retries-1:
-                                globals.logger.console(
-                                    f"Connection error (Reason: {err.__str__()}. Retrying...")
-                                continue
-                            if error_handler:
-                                error_handler(err)
-                            else:
-                                raise err
-            else:
-                # standard async function just call and wait and return
-                async def _wrapper():
-                    return await func(*args, **kwargs)
-            return _wrapper()
-        return wrapper
-    return decorator
-
-
 class BackupEventType(Enum):
     """for our function callback
 
@@ -159,10 +114,6 @@ class BackupSQlite:
 
 
 BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
-
-
-def on_error_handler(err: Exception):
-    globals.logger.console(f"Failed to connect. Reason: {err.__str__()}")
 
 
 class PlaylistManager:
