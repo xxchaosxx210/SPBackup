@@ -298,6 +298,12 @@ class SPBackupApp(WxAsyncApp):
             print(data["error"])
         elif event == playlist_manager.BackupEventType.BACKUP_PLAYLIST_ADDED:
             print(f'Playlist has been added: {data["playlist"].name}')
+        elif event == playlist_manager.BackupEventType.MAX_LIMIT_RATE_REACHED_RETRY:
+            globals.logger.console(
+                f'Limit reached from task:{data["task_name"]}, delay={data["delay"]}')
+        elif event == playlist_manager.BackupEventType.BACKUP_TRACK_ADDED:
+            globals.logger.console(
+                f'Track: {data["item"].track.name} has been added')
 
 
 def add_args() -> argparse.Namespace:

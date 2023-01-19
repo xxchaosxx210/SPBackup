@@ -88,6 +88,7 @@ class BackupEventType(Enum):
     BACKUP_TRACKS_SUCCESS = enum_auto()
     BACKUP_TRACKS_ERROR = enum_auto()
     BACKUP_TRACK_ADDED = enum_auto()
+    MAX_LIMIT_RATE_REACHED_RETRY = enum_auto()
 
 
 BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
@@ -142,8 +143,13 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
                     if isinstance(e, spotify.net.SpotifyError) and \
                             e.code == spotify.constants.STATUS_LIMIT_RATE_REACHED:
                         task_name: str = asyncio.current_task().get_name()
-                        globals.logger.console(
-                            f"Limit reached on Task {task_name}. Waiting {delay} seconds for next retry request...")
+                        # callback()
+                        PlaylistManager.backup_callback(
+                            BackupEventType.MAX_LIMIT_RATE_REACHED_RETRY, {
+                                "delay": delay,
+                                "timeout_factor": timeout_factor,
+                                "task_name": task_name
+                            })
                         await asyncio.sleep(delay)
                         delay += timeout_factor
                     else:
@@ -155,6 +161,7 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
 class PlaylistManager:
 
     running_task: asyncio.Task = None
+    backup_callback: BACKUP_CALLBACK_TYPE = None
 
     def __init__(self) -> None:
         # settings ans setting up the database tables
@@ -164,7 +171,7 @@ class PlaylistManager:
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
         # main callback handler
-        self.app_callback: BACKUP_CALLBACK_TYPE = None
+        PlaylistManager.backup_callback: BACKUP_CALLBACK_TYPE = None
         self.token: str = ""
         self.playlist_request_limit = 50
         self.tracks_request_limit = 50
@@ -178,7 +185,7 @@ class PlaylistManager:
             token (str): auth token
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
-        self.app_callback = callback
+        PlaylistManager.backup_callback = callback
         self.token = token
         # insert the backup table here
         playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
@@ -217,7 +224,12 @@ class PlaylistManager:
         # insert into database here
         for item in tracks.items:
             # globals.logger.console(item.track.name)
-            pass
+            PlaylistManager.backup_callback(
+                BackupEventType.BACKUP_TRACK_ADDED, {
+                    "item": item,
+                    "tracks": tracks
+                }
+            )
 
     async def handle_tracks(
             self, playlist_item: PlaylistItem, token: str, limit_per_request: int):
@@ -266,7 +278,7 @@ class PlaylistManager:
             await asyncio.gather(*tasks)
 
     def on_database_error(self, type, value, exception):
-        self.app_callback(BackupEventType.DATABASE_ERROR, {
+        PlaylistManager.backup_callback(BackupEventType.DATABASE_ERROR, {
             "type": type,
             "value": value,
             "exception": exception})
