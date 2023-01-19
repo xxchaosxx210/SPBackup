@@ -69,6 +69,7 @@ Album:
     name: str
 """
 
+
 class BackupEventType(Enum):
     """for our function callback
 
@@ -219,7 +220,7 @@ class PlaylistManager:
             pass
 
     async def handle_tracks(
-        self, playlist_item: PlaylistItem, token: str, limit_per_request: int):
+            self, playlist_item: PlaylistItem, token: str, limit_per_request: int):
         """is the tracks handler for the current playlist that requires pagination
         change self.max_tracks_tasks to increase or decrease the amount of connections
 
@@ -264,10 +265,11 @@ class PlaylistManager:
         if tasks:
             await asyncio.gather(*tasks)
 
-    
-    def on_sqlite_error(self, message: str):
-        self.app_callback()
-
+    def on_database_error(self, type, value, exception):
+        self.app_callback(BackupEventType.DATABASE_ERROR, {
+            "type": type,
+            "value": value,
+            "exception": exception})
 
     async def add_backup(self, name: str, description: str) -> int:
         """adds a backup entry to the database file

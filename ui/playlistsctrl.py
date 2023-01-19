@@ -50,7 +50,7 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             # bad token or task is running ignore the button press
             return
         app.playlist_manager.running_task = asyncio.create_task(
-            app.playlist_manager.backup_playlists(token))
+            app.playlist_manager.backup_playlists(token, app.playlists_backup_handler))
 
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
@@ -122,6 +122,7 @@ class PlaylistsCtrl(wx.ListCtrl, listmix.ListCtrlAutoWidthMixin):
     def OnItemSelected(self, event):
         item_index = event.GetIndex()
         app = wx.GetApp()
-        playlist: PlaylistsItem = SpotifyState.get_playlists().items[item_index]
+        playlist: PlaylistsItem = SpotifyState.get_playlists(
+        ).items[item_index]
         loop = asyncio.get_event_loop()
         loop.create_task(app.retrieve_playlist(playlist.id))
