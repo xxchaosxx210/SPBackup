@@ -11,7 +11,12 @@ from enum import (
     Enum,
     auto as enum_auto
 )
-from typing import Callable, Dict, Union
+from typing import (
+    Callable,
+    Dict,
+    Union,
+    List
+)
 from types import AsyncGeneratorType
 
 import spotify.debugging
@@ -65,7 +70,7 @@ Album:
     name: str
 """
 
-MAX_PLAYLISTS_CONNECT = 5
+MAX_PLAYLISTS_CONNECT = 1
 MAX_TRACKS_CONNECT = 5
 
 
@@ -190,7 +195,7 @@ class PlaylistManager:
                 token, playlist_id, offset, limit)
             track_counter -= len(tracks.items)
 
-    @retry_on_exception(max_retries=3, error_handler=on_error_handler)
+    # @retry_on_exception(max_retries=3, error_handler=on_error_handler)
     async def _playlists(self, token: str, limit: int) -> PlaylistItem:
         """generator function for retrieving playlists and yielding at one playlist per time
 
@@ -414,6 +419,129 @@ class PlaylistManager:
         ''')
 
 
+# async def _tracks(self, token: str, playlist_id: int, limit: int):
+#         offset = 0
+#         tracks = await spotify.net.get_playlist_tracks(
+#             access_token=token, playlist_id=playlist_id, offset=offset, limit=limit)
+#         track_counter = tracks.total
+#         total_tracks = tracks.total
+#         while track_counter > 0:
+#             for track in tracks.items:
+#                 yield track
+#             offset += limit
+#             if offset > total_tracks:
+#                 break
+#             # need to fix the bug this function is not correct
+#             tracks = await spotify.net.get_playlist_tracks(
+#                 token, playlist_id, offset, limit)
+#             track_counter -= len(tracks.items)
+
+async def fetch_and_insert_tracks(
+        token: str,
+        playlist_id: str,
+        offset: int,
+        limit_per_request: int):
+    tracks = await spotify.net.get_playlist_tracks(
+        token, playlist_id, offset, limit_per_request)
+    # insert into database here
+    for item in tracks.items:
+        globals.logger.console(item.track.name)
+
+
+async def fetch_from_playlist(playlist_item: PlaylistItem, token: str, limit_per_request: int):
+    # keeps track of the loop offset and checks limit and total
+    # creates a new fetch_and_insert_tracks
+    offset = 0
+    fetch_tasks = []
+    for tracks_index in range(playlist_item.tracks.total):
+        loop = asyncio.get_event_loop()
+        fetch_tasks.append(loop.create_task(fetch_and_insert_tracks(
+            token, playlist_item.id, offset, limit_per_request)))
+        if len(fetch_tasks) >= MAX_TRACKS_CONNECT:
+            result = asyncio.gather(*fetch_tasks)
+            await result
+            fetch_tasks = []
+            offset += limit_per_request
+    if fetch_tasks:
+        result = asyncio.gather(*fetch_tasks)
+        await result
+
+
+async def seek_next_playlists(token, offset, limit):
+    playlists = await spotify.net.get_playlists(token, offset=offset, limit=limit)
+    for playlist_item in playlists.items:
+        await fetch_from_playlist(playlist_item, token, 50)
+
+
+async def fetch_and_insert_playlists(playlist_info: Playlists, token: str, limit=50):
+    offset = 0
+    tasks = []
+    for index in range(playlist_info.total):
+        loop = asyncio.get_event_loop()
+        tasks.append(loop.create_task(
+            seek_next_playlists(token, offset, limit)))
+        if len(tasks) >= MAX_PLAYLISTS_CONNECT:
+            result = asyncio.gather(*tasks)
+            await result
+            tasks = []
+            offset += limit
+    if tasks:
+        result = asyncio.gather(*tasks)
+        await result
+
+
+async def backup_the_playlists(token: str):
+    # insert the backup table here
+    playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
+    await fetch_and_insert_playlists(playlist_info=playlists_info, token=token, limit=50)
+    globals.logger.console("All complete")
+
+
+# async def backup_playlists(
+#         playlist_manager: PlaylistManager,
+#         callback: BACKUP_CALLBACK_TYPE,
+#         token: str,
+#         backup_name: str,
+#         backup_description: str, limit=50):
+#     # create a backup entry to the sqlite3 database
+#     backup_id = await playlist_manager.add_backup(backup_name, backup_description)
+#     # temporary storage for holding tasks
+#     playlist_tasks = []
+#     track_tasks = []
+#     offset = 0
+#     while True:
+#         playlists = await spotify.net.get_playlists(token, offset=offset, limit=limit)
+#         for playlist in playlists.items:
+#             playlist_id = await playlist_manager.insert_playlist_db(playlist, backup_id)
+#             playlist_tasks.append(
+#                 playlist_manager.insert_playlist_db(playlist, backup_id))
+#             offset_track = 0
+#             while True:
+#                 tracks = await spotify.net.get_playlist_tracks(token, playlist.id, offset=offset_track, limit=50)
+#                 for track in tracks.items:
+#                     track_tasks.append(
+#                         playlist_manager.insert_track_db(track, playlist_id))
+#                 if len(tracks.items) < 50:
+#                     break
+#                 offset_track += 50
+#             if len(playlist_tasks) >= MAX_PLAYLISTS_CONNECT:
+#                 # gather will call create_task automatically
+#                 await asyncio.gather(*playlist_tasks)
+#                 playlist_tasks = []
+#             if len(track_tasks) >= MAX_TRACKS_CONNECT:
+#                 # gather will call create_task automatically
+#                 await asyncio.gather(*track_tasks)
+#                 track_tasks = []
+#         if len(playlists.items) < 50:
+#             break
+#         offset += 50
+#     if playlist_tasks:
+#         await asyncio.gather(*playlist_tasks)
+#     if track_tasks:
+#         await asyncio.gather(*track_tasks)
+#     callback(BackupEventType.BACKUP_SUCCESS, {})
+
+
 async def _test():
     from spotify.validators.user import ExternalUrls, Followers, Image
     user: SpotifyUser = SpotifyUser(
@@ -429,15 +557,6 @@ async def _test():
     pl: PlaylistManager = PlaylistManager()
     await pl.create_backup_directory(user=user)
     await pl.create_tables()
-
-async def backup_playlists(
-        playlists_todo: Playlists,
-        token: str, 
-        callback: BACKUP_CALLBACK_TYPE,
-        name: str,
-        description: str,
-        playlist_manager: PlaylistManager):
-    pass
 
 
 if __name__ == '__main__':
