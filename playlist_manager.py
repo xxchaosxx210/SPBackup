@@ -122,6 +122,13 @@ class BackupEventType(Enum):
     BACKUP_SUCCESS = enum_auto()
     BACKUP_ERROR = enum_auto()
     BACKUP_PLAYLIST_ADDED = enum_auto()
+    BACKUP_PLAYLIST_STARTED = enum_auto()
+    BACKUP_PLAYLIST_SUCCESS = enum_auto()
+    BACKUP_PLAYLIST_ERROR = enum_auto()
+    BACKUP_TRACKS_STARTED = enum_auto()
+    BACKUP_TRACKS_SUCCESS = enum_auto()
+    BACKUP_TRACKS_ERROR = enum_auto()
+    BACKUP_TRACKS_ADDED = enum_auto()
 
 
 class BackupSQlite:
@@ -163,6 +170,7 @@ class PlaylistManager:
         self.db_path: str = ""
         PLAYLIST_DIR = os.path.join(
             spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
+        self.app_callback: BACKUP_CALLBACK_TYPE = None
 
     # @retry_on_exception(max_retries=3, error_handler=on_error_handler)
     async def _tracks(self, token: str, playlist_id: int, limit: int):
@@ -173,8 +181,6 @@ class PlaylistManager:
         total_tracks = tracks.total
         while track_counter > 0:
             for track in tracks.items:
-                globals.logger.console(
-                    f"Track: Saving {track.track.name} to {self.db_path}")
                 yield track
             offset += limit
             if offset > total_tracks:
@@ -197,7 +203,6 @@ class PlaylistManager:
         """
         offset = 0
         playlists = await spotify.net.get_playlists(token, offset=offset, limit=limit)
-        # playlists_items = playlists.items
         playlists_counter = playlists.total
         total_playlists = playlists.total
         while playlists_counter > 0:
@@ -209,22 +214,6 @@ class PlaylistManager:
             playlists = await spotify.net.get_playlists(
                 token, offset=offset, limit=limit)
             playlists_counter -= len(playlists.items)
-    
-    async def get_all_tracks_from_playlist(
-        self, token: str, playlist_id: str, playlist_db_id: int, limit: int):
-        offset = 0
-        tracks = await spotify.net.get_playlist_tracks(
-            token, playlist_id, offset, limit)
-        total = tracks.total
-        while total > 0:
-            for track_item in tracks.items:
-                await self.insert_track_db(track_item, playlist_db_id)
-            offset += limit
-            if offset > limit:
-                break
-            tracks = await spotify.net.get_playlist_tracks(
-                token, playlist_id, offset, limit)
-            total -= len(tracks.items)
 
     async def backup_playlists(self,
                                callback: BACKUP_CALLBACK_TYPE,
@@ -241,6 +230,8 @@ class PlaylistManager:
             backup_description (str): the description of the backup entry
             limit (int, optional): maximum number of playlists in every HTTP response. Defaults to 50.
         """
+        # callback to the main event handler
+        self.app_callback = callback
         # create a backup entry to the sqlite3 database
         backup_id: int = await self.add_backup(backup_name, backup_description)
         # temporary storage for holding tasks
@@ -250,8 +241,10 @@ class PlaylistManager:
             async for playlist in await self._playlists(token, limit):
                 # callback(BackupEventType.BACKUP_PLAYLIST_ADDED, {"playlist": playlist})
                 playlist_id = await self.insert_playlist_db(playlist, backup_id)
-                self.playlist_tasks.append(self.insert_playlist_db(playlist, backup_id))
-                tracks = self._tracks(token=token, playlist_id=playlist.id, limit=50)
+                self.playlist_tasks.append(
+                    self.insert_playlist_db(playlist, backup_id))
+                tracks = self._tracks(
+                    token=token, playlist_id=playlist.id, limit=50)
                 async for track_item in tracks:
                     self.track_tasks.append(
                         self.insert_track_db(item=track_item, playlist_id=playlist_id))
@@ -273,7 +266,6 @@ class PlaylistManager:
             callback(BackupEventType.BACKUP_SUCCESS, {})
         except Exception as err:
             globals.logger.console(err.__str__(), "error")
-
 
     async def add_backup(self, name: str, description: str) -> int:
         """adds a backup entry to the database file
@@ -321,7 +313,8 @@ class PlaylistManager:
             cursor.execute('''
             INSERT INTO Albums (name) VALUES (?)''', (item.track.album.name,))
             album_id = cursor.lastrowid
-            artist_names = list(map(lambda artist: artist.name, item.track.artists))
+            artist_names = list(
+                map(lambda artist: artist.name, item.track.artists))
             artist_names = ",".join(artist_names)
             # JOIN THE ARTISTS TOGETHER AND ADD THEM
             cursor.execute('''
@@ -333,6 +326,8 @@ class PlaylistManager:
             (uri, name, playlist_id, artists_id, album_id) VALUES 
             (?, ?, ?, ?, ?)''', (item.track.uri, item.track.name, playlist_id, artists_id, album_id))
             track_id = cursor.lastrowid
+            globals.logger.console(
+                f"Track: {item.track.name} has been stored")
             return track_id
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:
@@ -434,6 +429,16 @@ async def _test():
     pl: PlaylistManager = PlaylistManager()
     await pl.create_backup_directory(user=user)
     await pl.create_tables()
+
+async def backup_playlists(
+        playlists_todo: Playlists,
+        token: str, 
+        callback: BACKUP_CALLBACK_TYPE,
+        name: str,
+        description: str,
+        playlist_manager: PlaylistManager):
+    pass
+
 
 if __name__ == '__main__':
     import asyncio
