@@ -434,18 +434,21 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
             # decorator arguments need to be declared in this local scope
             nonlocal delay
             nonlocal timeout_factor
+            default_delay = delay
             # infinte loop may change this later on but for now the function will keep
             # looping on every unsuccessful 428 code resquest
             while True:
                 try:
                     result = await func(*args, **kwargs)
+                    delay = default_delay
                     return result
                 except Exception as e:
                     # check for a maximum limit exceeded from the server
                     if isinstance(e, spotify.net.SpotifyError) and \
                             e.code == spotify.constants.STATUS_LIMIT_RATE_REACHED:
+                        task_name: str = asyncio.current_task().get_name()
                         globals.logger.console(
-                            f"Maximum requests limit reached waiting {delay} seconds for next retry request...")
+                            f"Limit reached on Task {task_name}. Waiting {delay} seconds for next retry request...")
                         await asyncio.sleep(delay)
                         delay += timeout_factor
                     else:
@@ -480,14 +483,15 @@ async def fetch_and_insert_tracks(
         offset (int): the current offset
         limit_per_request (int): the amount of tracks to return (Maximum is 50)
     """
-    globals.logger.console(
-        f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
+    # globals.logger.console(
+    #     f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
     tracks = await get_tracks_with_retry(
         access_token=token, playlist_id=playlist_id, offset=offset, limit=limit_per_request
     )
     # insert into database here
     for item in tracks.items:
-        globals.logger.console(item.track.name)
+        # globals.logger.console(item.track.name)
+        pass
 
 
 async def handle_tracks(playlist_item: PlaylistItem, token: str, limit_per_request: int):
