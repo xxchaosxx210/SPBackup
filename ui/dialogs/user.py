@@ -48,6 +48,12 @@ class UserDialog(wx.Dialog):
         
 
 def create_dialog(parent: any, userinfo: User):
+    """display the user information this will be async
+
+    Args:
+        parent (any): Parent window usually the Frame
+        userinfo (User): spotify User class
+    """
     dlg = UserDialog(parent, userinfo)
     dlg.ShowModal()
     dlg.Destroy()

@@ -5,9 +5,11 @@ import argparse
 
 from wxasync import WxAsyncApp
 
+# Dialogs
 from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
 import ui.dialogs.user
+import ui.dialogs.error
 
 import globals.config
 import globals.token
@@ -294,9 +296,10 @@ class SPBackupApp(WxAsyncApp):
             data (dict): dict depending on the event will contain data related to it
         """
         if BET.DATABASE_ERROR:
-            globals.logger.console(
-                f'SQLite Error: {data["type"]}, {data["value"]}, {data["exception"]}'
-            )
+            message = f'SQLite Error: {data["type"]}, {data["value"]}, {data["exception"]}'
+            wx.CallAfter(
+                ui.dialogs.error.show_dialog, 
+                parent=UI.main_frame, title="Database Error", message=message)
 
 
 def add_args() -> argparse.Namespace:
