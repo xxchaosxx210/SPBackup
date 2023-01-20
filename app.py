@@ -297,13 +297,18 @@ class SPBackupApp(WxAsyncApp):
             event (playlist_manager.BackupEventType): enumerated type event
             data (dict): dict depending on the event will contain data related to it
         """
-        if BET.DATABASE_ERROR:
+        if event == BET.DATABASE_ERROR:
             message = f'SQLite Error: {data["type"]}, {data["value"]}, {data["exception"]}'
             wx.CallAfter(
                 ui.dialogs.error.show_dialog, 
                 parent=UI.main_frame, title="Database Error", message=message)
-        elif BET.TRACK_ADDED:
-            globals.logger.console(f'New Track added {data["item.track.name"]}')
+        elif event == BET.PLAYLIST_ADDED:
+            globals.logger.console(f'Playlist Added: {data["item"].name}')
+        elif event == BET.TRACK_ADDED:
+            # globals.logger.console(f'New Track added {data["item"].track.name}')
+            pass
+        elif event == BET.BACKUP_ERROR:
+            globals.logger.console(f'{data["type"]} in - ({data["function_name"]}): {data["error"]}')
 
 
 def add_args() -> argparse.Namespace:

@@ -14,7 +14,8 @@ from enum import (
 from typing import (
     Callable,
     Dict,
-    Union
+    Union,
+    List
 )
 
 import spotify.debugging
@@ -91,6 +92,8 @@ class BackupEventType(Enum):
     BACKUP_SUCCESS = enum_auto()
     # spotify blocking more requests
     MAX_LIMIT_RATE_REACHED_RETRY = enum_auto()
+    # General error coming from gather function
+    BACKUP_ERROR = enum_auto()
 
     # errors
     DATABASE_ERROR = enum_auto()
@@ -182,7 +185,18 @@ class PlaylistManager:
         self.playlist_request_limit = 50
         self.tracks_request_limit = 50
         self.max_playlists_tasks = 1
-        self.max_tracks_tasks = 1
+        self.max_tracks_tasks = 10
+
+    def handle_error_results_from_gather(self, function_name: str, results: List[Exception]):
+        for result in results:
+            if result is None:
+                continue
+            if isinstance(result, Exception):
+                self.backup_callback(BackupEventType.BACKUP_ERROR, {
+                    "error": result.__str__(),
+                    "function_name": function_name,
+                    "type": type(result)
+                })
 
     async def backup_playlists(
             self,
@@ -240,15 +254,12 @@ class PlaylistManager:
         for item in tracks.items:
             # insert into database here
             await self.insert_track_db(item=item, playlist_pk=playlist_pk)
-            try:
-                PlaylistManager.backup_callback(
-                    BackupEventType.BACKUP_TRACK_ADDED, {
-                        "item": item,
-                        "tracks": tracks
-                    }
-                )
-            except Exception as err:
-                globals.logger.console(f'Error calling backup_callback in fetch_and_insert_tracks. Reason: {err.__str__()}')
+            PlaylistManager.backup_callback(
+                BackupEventType.TRACK_ADDED, {
+                    "item": item,
+                    "tracks": tracks
+                }
+            )
 
     async def handle_tracks(
             self,
@@ -275,12 +286,15 @@ class PlaylistManager:
                 limit_per_request=limit_per_request))
             fetch_tasks.append(task)
             if len(fetch_tasks) >= self.max_tracks_tasks:
-                result = asyncio.gather(*fetch_tasks, return_exceptions=True)
-                await result
+                results: List[any] = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+                self.handle_error_results_from_gather(
+                    "handle_tracks", results=results)
                 fetch_tasks = []
                 offset += limit_per_request
         if fetch_tasks:
-            await asyncio.gather(*fetch_tasks, return_exceptions=True)
+            results: List[any] = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+            self.handle_error_results_from_gather(
+                "handle_tracks", results=results)
 
     async def fetch_and_insert_playlists(
             self, backup_pk: int, offset: int, limit: int):
@@ -298,11 +312,14 @@ class PlaylistManager:
             # Insert the Playlist to the database
             playlist_pk = await self.insert_playlist_db(
                 item=playlist_item, backup_id=backup_pk)
+            self.backup_callback(BackupEventType.PLAYLIST_ADDED, {
+                "item": playlist_item
+            })
             # handle the playlist pagination
-            await self.handle_tracks(
-                playlist_pk=playlist_pk,
-                playlist_item=playlist_item,
-                limit_per_request=limit)
+            # await self.handle_tracks(
+            #     playlist_pk=playlist_pk,
+            #     playlist_item=playlist_item,
+            #     limit_per_request=limit)
 
     async def handle_playlists(
             self,
@@ -316,11 +333,15 @@ class PlaylistManager:
             tasks.append(loop.create_task(
                 self.fetch_and_insert_playlists(backup_pk, offset, limit)))
             if len(tasks) >= self.max_playlists_tasks:
-                await asyncio.gather(*tasks, return_exceptions=True)
+                results: List[any] = await asyncio.gather(*tasks, return_exceptions=True)
+                self.handle_error_results_from_gather(
+                    "handle_playlists", results=results)
                 tasks = []
                 offset += limit
         if tasks:
-            await asyncio.gather(*tasks, return_exceptions=True)
+            results: List[any] = await asyncio.gather(*tasks, return_exceptions=True)
+            self.handle_error_results_from_gather(
+                "handle_playlists", results=results)
 
     def on_database_error(self, type, value, exception):
         PlaylistManager.backup_callback(BackupEventType.DATABASE_ERROR, {
