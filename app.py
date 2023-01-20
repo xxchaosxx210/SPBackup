@@ -25,6 +25,7 @@ from spotify.listener import (
 )
 
 import playlist_manager
+from playlist_manager import BackupEventType as BET
 
 import globals.logger
 from globals.state import (
@@ -292,18 +293,10 @@ class SPBackupApp(WxAsyncApp):
             event (playlist_manager.BackupEventType): enumerated type event
             data (dict): dict depending on the event will contain data related to it
         """
-        if event == playlist_manager.BackupEventType.BACKUP_SUCCESS:
-            print("Backup has been complete")
-        elif event == playlist_manager.BackupEventType.BACKUP_ERROR:
-            print(data["error"])
-        elif event == playlist_manager.BackupEventType.BACKUP_PLAYLIST_ADDED:
-            print(f'Playlist has been added: {data["playlist"].name}')
-        elif event == playlist_manager.BackupEventType.MAX_LIMIT_RATE_REACHED_RETRY:
+        if BET.DATABASE_ERROR:
             globals.logger.console(
-                f'Limit reached from task:{data["task_name"]}, delay={data["delay"]}')
-        elif event == playlist_manager.BackupEventType.BACKUP_TRACK_ADDED:
-            globals.logger.console(
-                f'Track: {data["item"].track.name} has been added')
+                f'SQLite Error: {data["type"]}, {data["value"]}, {data["exception"]}'
+            )
 
 
 def add_args() -> argparse.Namespace:

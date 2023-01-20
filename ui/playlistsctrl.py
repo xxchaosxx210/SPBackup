@@ -50,7 +50,8 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
             # bad token or task is running ignore the button press
             return
         app.playlist_manager.running_task = asyncio.create_task(
-            app.playlist_manager.backup_playlists(token, app.playlists_backup_handler))
+            app.playlist_manager.backup_playlists(
+                token, app.playlists_backup_handler, "Test", "This is a test purpose entry only"))
 
     def on_restore_click(self, evt: wx.CommandEvent):
         print("Restore clicked")
