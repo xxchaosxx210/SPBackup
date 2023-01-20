@@ -77,18 +77,24 @@ class BackupEventType(Enum):
         Enum (int): ID of the event that has happened
     """
 
+    # when the backup starts
+    BACKUP_START = enum_auto()
+    # when playlists info is retrieved at the beginning. Basic information like total
+    PLAYLISTS_UPDATE = enum_auto()
+    # playlist found added to database
+    PLAYLIST_ADDED = enum_auto()
+    # playlist information including total tracks
+    PLAYLIST_UPDATE = enum_auto()
+    # Track found and added to database
+    TRACK_ADDED = enum_auto()
+    # Backup was successful
     BACKUP_SUCCESS = enum_auto()
-    BACKUP_ERROR = enum_auto()
-    DATABASE_ERROR = enum_auto()
-    BACKUP_PLAYLIST_ADDED = enum_auto()
-    BACKUP_PLAYLIST_STARTED = enum_auto()
-    BACKUP_PLAYLIST_SUCCESS = enum_auto()
-    BACKUP_PLAYLIST_ERROR = enum_auto()
-    BACKUP_TRACKS_STARTED = enum_auto()
-    BACKUP_TRACKS_SUCCESS = enum_auto()
-    BACKUP_TRACKS_ERROR = enum_auto()
-    BACKUP_TRACK_ADDED = enum_auto()
+    # spotify blocking more requests
     MAX_LIMIT_RATE_REACHED_RETRY = enum_auto()
+
+    # errors
+    DATABASE_ERROR = enum_auto()
+    NETWORK_ERROR = enum_auto()
 
 
 BACKUP_CALLBACK_TYPE = Callable[[BackupEventType, Union[Dict, str]], None]
@@ -191,7 +197,7 @@ class PlaylistManager:
         playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
         await self.handle_playlists(
             playlist_info=playlists_info, token=token, limit=50)
-        globals.logger.console("All complete")
+        callback(BackupEventType.BACKUP_SUCCESS, None)
 
     @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
     async def get_playlists_with_retry(self, *args, **kwargs) -> Playlists:
