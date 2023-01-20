@@ -88,6 +88,9 @@ class Item(BaseModel):
     track: Optional[Track]
     video_thumbnail: Optional[VideoThumbnail]
 
+    # Ive been working on a playlist backup app and had to add these property methods in
+    # to deal with podcasts. As they do not contain tracks. Something I need to look at
+
     @property
     def track_name(self):
         return self.track.name if self.track is not None else ""
