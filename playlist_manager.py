@@ -166,6 +166,28 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
 
 class PlaylistManager:
 
+    """
+    Methods:
+
+    backup_playlists
+    get_playlists_with_retry
+    get_tracks_with_retry
+    fetch_and_insert_tracks
+    handle_tracks
+    fetch_and_insert_playlists
+    on_database_error
+    add_backup
+    insert_playlist_db
+    insert_track_db
+    create_backup_directory
+    create_tables
+    create_backup_table
+    create_playlists_table
+    create_track_table
+    create_album_table
+    create_artists_table
+    """
+
     running_task: asyncio.Task = None
     backup_callback: BACKUP_CALLBACK_TYPE = None
 
@@ -408,6 +430,9 @@ class PlaylistManager:
             str: returns the pathname to where the database was created
         """
         user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
+        if user is None:
+            raise TypeError("User in create_backup_directory does not exist")
+        self.user = user
         try:
             os.makedirs(user_path, exist_ok=False)
             spotify.debugging.file_log(
@@ -421,7 +446,7 @@ class PlaylistManager:
             return self.db_path
 
     async def create_tables(self):
-        with BackupSQlite(self.db_path) as cursor:
+        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             # setup the database
             await self.create_backup_table(cursor)
             await self.create_playlists_table(cursor)
