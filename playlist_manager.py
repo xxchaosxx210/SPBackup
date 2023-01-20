@@ -166,28 +166,6 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
 
 class PlaylistManager:
 
-    """
-    Methods:
-
-    backup_playlists
-    get_playlists_with_retry
-    get_tracks_with_retry
-    fetch_and_insert_tracks
-    handle_tracks
-    fetch_and_insert_playlists
-    on_database_error
-    add_backup
-    insert_playlist_db
-    insert_track_db
-    create_backup_directory
-    create_tables
-    create_backup_table
-    create_playlists_table
-    create_track_table
-    create_album_table
-    create_artists_table
-    """
-
     running_task: asyncio.Task = None
     backup_callback: BACKUP_CALLBACK_TYPE = None
 
@@ -215,7 +193,6 @@ class PlaylistManager:
         """the start of the backup process. Call this from within the main thread
 
         Args:
-            token (str): auth token
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
         PlaylistManager.backup_callback = callback
@@ -224,11 +201,10 @@ class PlaylistManager:
         backup_pk: int = await self.add_backup(
             name=backup_name, description=backup_description)
         # get the playlist information
-        playlists_info: Playlists = await spotify.net.get_playlists(token, limit=50)
+        playlists_info: Playlists = await spotify.net.get_playlists(self.token, limit=50)
         await self.handle_playlists(
             backup_pk=backup_pk,
-            playlist_info=playlists_info,
-            token=token, limit=50)
+            playlist_info=playlists_info, limit=50)
         callback(BackupEventType.BACKUP_SUCCESS, None)
 
     @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
@@ -242,7 +218,6 @@ class PlaylistManager:
     async def fetch_and_insert_tracks(
             self,
             playlist_pk: int,
-            token: str,
             playlist_id: str,
             offset: int,
             limit_per_request: int):
@@ -250,7 +225,6 @@ class PlaylistManager:
         the database
 
         Args:
-            token (str): access token
             playlist_id (str): ID of the playlist to get the tracks from
             offset (int): the current offset
             limit_per_request (int): the amount of tracks to return (Maximum is 50)
@@ -258,31 +232,34 @@ class PlaylistManager:
         # globals.logger.console(
         #     f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
         tracks = await self.get_tracks_with_retry(
-            access_token=token, playlist_id=playlist_id, offset=offset, limit=limit_per_request
+            access_token=self.token,
+            playlist_id=playlist_id,
+            offset=offset,
+            limit=limit_per_request
         )
         for item in tracks.items:
             # insert into database here
-            self.insert_track_db(item=item, playlist_pk=playlist_pk)
-            # globals.logger.console(item.track.name)
-            PlaylistManager.backup_callback(
-                BackupEventType.BACKUP_TRACK_ADDED, {
-                    "item": item,
-                    "tracks": tracks
-                }
-            )
+            await self.insert_track_db(item=item, playlist_pk=playlist_pk)
+            try:
+                PlaylistManager.backup_callback(
+                    BackupEventType.BACKUP_TRACK_ADDED, {
+                        "item": item,
+                        "tracks": tracks
+                    }
+                )
+            except Exception as err:
+                globals.logger.console(f'Error calling backup_callback in fetch_and_insert_tracks. Reason: {err.__str__()}')
 
     async def handle_tracks(
-            self, 
+            self,
             playlist_pk: int,
-            playlist_item: PlaylistItem, 
-            token: str, 
+            playlist_item: PlaylistItem,
             limit_per_request: int):
         """is the tracks handler for the current playlist that requires pagination
         change self.max_tracks_tasks to increase or decrease the amount of connections
 
         Args:
             playlist_item (PlaylistItem): the playlist item to get the track listings from
-            token (str): the access token
             limit_per_request (int): the amount of tracks to return from the request
         """
         # keeps track of the loop offset and checks limit and total
@@ -293,61 +270,57 @@ class PlaylistManager:
             loop = asyncio.get_event_loop()
             task: asyncio.Task = loop.create_task(self.fetch_and_insert_tracks(
                 playlist_pk=playlist_pk,
-                token=token, 
-                playlist_id=playlist_item.id, 
-                offset=offset, 
+                playlist_id=playlist_item.id,
+                offset=offset,
                 limit_per_request=limit_per_request))
             fetch_tasks.append(task)
             if len(fetch_tasks) >= self.max_tracks_tasks:
-                result = asyncio.gather(*fetch_tasks)
+                result = asyncio.gather(*fetch_tasks, return_exceptions=True)
                 await result
                 fetch_tasks = []
                 offset += limit_per_request
         if fetch_tasks:
-            await asyncio.gather(*fetch_tasks)
+            await asyncio.gather(*fetch_tasks, return_exceptions=True)
 
     async def fetch_and_insert_playlists(
-        self, backup_pk: int, token: str, offset: int, limit: int):
+            self, backup_pk: int, offset: int, limit: int):
         """ loop through each offset and retrieve the playlists and add each playlist to the database
         and start the next tracks handler for retrieving the tracks
 
         Args:
             backup_pk (int): The Backup Primary Key in the database to be associated with each playlist
-            token (str): auth token
             offset (int): the offset to loop through handle pagination
             limit (int): limit the amount in the respoonse
         """
         playlists = await self.get_playlists_with_retry(
-            token=token, url="", offset=offset, limit=limit)
+            token=self.token, url="", offset=offset, limit=limit)
         for playlist_item in playlists.items:
             # Insert the Playlist to the database
             playlist_pk = await self.insert_playlist_db(
                 item=playlist_item, backup_id=backup_pk)
             # handle the playlist pagination
             await self.handle_tracks(
-                playlist_pk=playlist_pk, 
-                playlist_item=playlist_item, 
-                token=token, 
+                playlist_pk=playlist_pk,
+                playlist_item=playlist_item,
                 limit_per_request=limit)
 
     async def handle_playlists(
             self,
             backup_pk: int,
             playlist_info: Playlists,
-            token: str,
             limit=50):
         offset = 0
         tasks = []
         for index in range(playlist_info.total):
             loop = asyncio.get_event_loop()
             tasks.append(loop.create_task(
-                self.fetch_and_insert_playlists(backup_pk, token, offset, limit)))
+                self.fetch_and_insert_playlists(backup_pk, offset, limit)))
             if len(tasks) >= self.max_playlists_tasks:
-                await asyncio.gather(*tasks)
+                await asyncio.gather(*tasks, return_exceptions=True)
                 tasks = []
                 offset += limit
         if tasks:
-            await asyncio.gather(*tasks)
+            await asyncio.gather(*tasks, return_exceptions=True)
 
     def on_database_error(self, type, value, exception):
         PlaylistManager.backup_callback(BackupEventType.DATABASE_ERROR, {
@@ -414,8 +387,6 @@ class PlaylistManager:
             (uri, name, playlist_id, artists_id, album_id) VALUES 
             (?, ?, ?, ?, ?)''', (item.track.uri, item.track.name, playlist_pk, artists_id, album_id))
             track_id = cursor.lastrowid
-            globals.logger.console(
-                f"Track: {item.track.name} has been stored")
             return track_id
 
     async def create_backup_directory(self, user: SpotifyUser) -> str:

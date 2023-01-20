@@ -95,6 +95,8 @@ class SPBackupApp(WxAsyncApp):
             await self.playlist_manager.create_backup_directory(user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(err)
+        except Exception as err:
+            globals.logger.console(err.__str__())
         finally:
             return
 
@@ -300,6 +302,8 @@ class SPBackupApp(WxAsyncApp):
             wx.CallAfter(
                 ui.dialogs.error.show_dialog, 
                 parent=UI.main_frame, title="Database Error", message=message)
+        elif BET.TRACK_ADDED:
+            globals.logger.console(f'New Track added {data["item.track.name"]}')
 
 
 def add_args() -> argparse.Namespace:
