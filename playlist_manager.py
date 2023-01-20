@@ -184,7 +184,7 @@ class PlaylistManager:
         self.token: str = ""
         self.playlist_request_limit = 50
         self.tracks_request_limit = 50
-        self.max_playlists_tasks = 1
+        self.max_playlists_tasks = 5
         self.max_tracks_tasks = 10
 
     def handle_error_results_from_gather(self, function_name: str, results: List[Exception]):
@@ -328,7 +328,19 @@ class PlaylistManager:
             limit=50):
         offset = 0
         tasks = []
-        for index in range(playlist_info.total):
+        # while offset <= playlist_info.total:
+        #     loop = asyncio.get_event_loop()
+        #     tasks.append(loop.create_task(
+        #         self.fetch_and_insert_playlists(backup_pk, offset, limit)))
+        #     if len(tasks) >= self.max_playlists_tasks:
+        #         results: List[any] = await asyncio.gather(*tasks, return_exceptions=True)
+        #         self.handle_error_results_from_gather(
+        #             "handle_playlists", results=results)
+        #         tasks = []
+        #         offset += limit
+        if limit > playlist_info.total:
+            limit = playlist_info.total
+        while offset <= playlist_info.total:
             loop = asyncio.get_event_loop()
             tasks.append(loop.create_task(
                 self.fetch_and_insert_playlists(backup_pk, offset, limit)))
@@ -337,7 +349,8 @@ class PlaylistManager:
                 self.handle_error_results_from_gather(
                     "handle_playlists", results=results)
                 tasks = []
-                offset += limit
+            offset += limit  # Move offset to next page of playlists
+
         if tasks:
             results: List[any] = await asyncio.gather(*tasks, return_exceptions=True)
             self.handle_error_results_from_gather(
