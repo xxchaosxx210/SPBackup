@@ -277,7 +277,9 @@ class PlaylistManager:
         # creates a new fetch_and_insert_tracks
         offset = 0
         fetch_tasks = []
-        for tracks_index in range(playlist_item.tracks.total):
+        if limit_per_request > playlist_item.tracks.total:
+            limit_per_request = playlist_item.tracks.total
+        while offset < playlist_item.tracks.total:
             loop = asyncio.get_event_loop()
             task: asyncio.Task = loop.create_task(self.fetch_and_insert_tracks(
                 playlist_pk=playlist_pk,
@@ -290,7 +292,7 @@ class PlaylistManager:
                 self.handle_error_results_from_gather(
                     "handle_tracks", results=results)
                 fetch_tasks = []
-                offset += limit_per_request
+            offset += limit_per_request
         if fetch_tasks:
             results: List[any] = await asyncio.gather(*fetch_tasks, return_exceptions=True)
             self.handle_error_results_from_gather(
@@ -316,10 +318,10 @@ class PlaylistManager:
                 "item": playlist_item
             })
             # handle the playlist pagination
-            # await self.handle_tracks(
-            #     playlist_pk=playlist_pk,
-            #     playlist_item=playlist_item,
-            #     limit_per_request=limit)
+            await self.handle_tracks(
+                playlist_pk=playlist_pk,
+                playlist_item=playlist_item,
+                limit_per_request=limit)
 
     async def handle_playlists(
             self,

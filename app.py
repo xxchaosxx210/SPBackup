@@ -305,10 +305,11 @@ class SPBackupApp(WxAsyncApp):
         elif event == BET.PLAYLIST_ADDED:
             globals.logger.console(f'Playlist Added: {data["item"].name}')
         elif event == BET.TRACK_ADDED:
-            # globals.logger.console(f'New Track added {data["item"].track.name}')
-            pass
+            globals.logger.console(f'New Track added {data["item"].track.name}')
         elif event == BET.BACKUP_ERROR:
             globals.logger.console(f'{data["type"]} in - ({data["function_name"]}): {data["error"]}')
+        elif event == BET.MAX_LIMIT_RATE_REACHED_RETRY:
+            globals.logger.console(f'Maximum limit reached. Trying again in {data["delay"]} seconds...')
 
 
 def add_args() -> argparse.Namespace:
