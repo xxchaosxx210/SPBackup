@@ -300,16 +300,22 @@ class SPBackupApp(WxAsyncApp):
         if event == BET.DATABASE_ERROR:
             message = f'SQLite Error: {data["type"]}, {data["value"]}, {data["exception"]}'
             wx.CallAfter(
-                ui.dialogs.error.show_dialog, 
+                ui.dialogs.error.show_dialog,
                 parent=UI.main_frame, title="Database Error", message=message)
         elif event == BET.PLAYLIST_ADDED:
             globals.logger.console(f'Playlist Added: {data["item"].name}')
         elif event == BET.TRACK_ADDED:
-            globals.logger.console(f'New Track added {data["item"].track.name}')
+            globals.logger.console(
+                f'New Track added {data["item"].track.name}')
         elif event == BET.BACKUP_ERROR:
-            globals.logger.console(f'{data["type"]} in - ({data["function_name"]}): {data["error"]}')
+            globals.logger.console(
+                f'{data["type"]} in - ({data["function_name"]}): {data["error"]}')
         elif event == BET.MAX_LIMIT_RATE_REACHED_RETRY:
-            globals.logger.console(f'Maximum limit reached. Trying again in {data["delay"]} seconds...')
+            globals.logger.console(
+                f'Maximum limit reached. Trying again in {data["delay"]} seconds...')
+        elif event == BET.BACKUP_SUCCESS:
+            wx.CallAfter(wx.MessageBox, message="All Backed up!!",
+                         caption="All done", style=wx.OK | wx.CENTER)
 
 
 def add_args() -> argparse.Namespace:

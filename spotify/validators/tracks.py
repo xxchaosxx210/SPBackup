@@ -90,11 +90,23 @@ class Item(BaseModel):
 
     @property
     def track_name(self):
-        return self.track.name
-    
+        return self.track.name if self.track is not None else ""
+
     @property
     def track_album(self):
         return self.track.album
+
+    @property
+    def track_uri(self) -> str:
+        return self.track.uri if self.track is not None else ""
+
+    @property
+    def track_album_name(self) -> str:
+        return self.track.album.name if self.track is not None else ""
+
+    @property
+    def track_artists_names(self) -> list:
+        return self.track.artists if self.track is not None else []
 
 
 class Tracks(BaseModel):

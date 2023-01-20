@@ -406,13 +406,15 @@ class PlaylistManager:
 
     async def insert_track_db(self, item: TrackItem, playlist_pk: int) -> int:
         with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+            if item.track is None:
+                pass
+            artist_names = list(
+                    map(lambda artist: artist.name, item.track_artists_names))
+            artist_names = ",".join(artist_names)
             # ADD THE ALBUM FIRST
             cursor.execute('''
-            INSERT INTO Albums (name) VALUES (?)''', (item.track.album.name,))
+            INSERT INTO Albums (name) VALUES (?)''', (item.track_album_name,))
             album_id = cursor.lastrowid
-            artist_names = list(
-                map(lambda artist: artist.name, item.track.artists))
-            artist_names = ",".join(artist_names)
             # JOIN THE ARTISTS TOGETHER AND ADD THEM
             cursor.execute('''
             INSERT INTO Artists (name) VALUES (?)''', (artist_names,))
@@ -421,7 +423,7 @@ class PlaylistManager:
             cursor.execute('''
             INSERT INTO Tracks 
             (uri, name, playlist_id, artists_id, album_id) VALUES 
-            (?, ?, ?, ?, ?)''', (item.track.uri, item.track.name, playlist_pk, artists_id, album_id))
+            (?, ?, ?, ?, ?)''', (item.track_uri, item.track_name, playlist_pk, artists_id, album_id))
             track_id = cursor.lastrowid
             return track_id
 
