@@ -300,7 +300,7 @@ class PlaylistManager:
             int: the Backup Primary Key ID
         """
         date_added = datetime.now()
-        with BackupSQlite(self.db_path) as cursor:
+        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, date_added))
@@ -320,7 +320,7 @@ class PlaylistManager:
         Returns:
             int: the ID of the playlist
         """
-        with BackupSQlite(self.db_path) as cursor:
+        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             cursor.execute('''
             INSERT INTO Playlists 
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
@@ -330,7 +330,7 @@ class PlaylistManager:
             return playlist_id
 
     async def insert_track_db(self, item: TrackItem, playlist_id: int) -> int:
-        with BackupSQlite(self.db_path) as cursor:
+        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             # ADD THE ALBUM FIRST
             cursor.execute('''
             INSERT INTO Albums (name) VALUES (?)''', (item.track.album.name,))
