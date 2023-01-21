@@ -6,10 +6,17 @@ state.py
 
 import threading
 import wx
+import asyncio
+import logging
+
+from typing import List
 
 from spotify.validators.playlist import Playlist
 from spotify.validators.playlist import Tracks as PlaylistTracks
 from spotify.validators.playlists import Playlists
+
+from ui.dialogs.loading import LoadingDialog
+
 
 class UI:
 
@@ -25,7 +32,7 @@ class UI:
     playlistinfo_toolbar: wx.Panel = None
     playlists_spw: wx.SplitterWindow = None
     statusbar: wx.StatusBar = None
-    progress_dialog: wx.Dialog = None
+    progress_dialog: LoadingDialog = None
 
 
 class Global:
@@ -59,13 +66,14 @@ class UserState(Global):
         with Global.get_lock():
             return UserState.__token
 
+
 class SpotifyState(Global):
 
     """
     for holding playlists and playlist
     """
 
-    __playlist: Playlist = None 
+    __playlist: Playlist = None
     __playlists: Playlists = None
 
     @staticmethod
@@ -82,7 +90,7 @@ class SpotifyState(Global):
     def set_playlist(playlist: Playlist):
         with Global.get_lock():
             SpotifyState.__playlist = playlist
-    
+
     @staticmethod
     def update_playlist_tracks(tracks: PlaylistTracks):
         """update the tracks in the playlist info
@@ -92,12 +100,12 @@ class SpotifyState(Global):
         """
         with Global.get_lock():
             SpotifyState.__playlist.tracks = tracks
-    
+
     @staticmethod
     def get_playlist_tracks():
         with Global.get_lock():
             return SpotifyState.__playlist.tracks
-    
+
     @staticmethod
     def get_playlist() -> Playlist:
         with Global.get_lock():

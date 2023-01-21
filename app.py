@@ -10,6 +10,7 @@ from ui.main_frame import MainFrame
 from ui.dialogs.auth import AuthDialog
 import ui.dialogs.user
 import ui.dialogs.error
+import ui.dialogs.loading
 
 import globals.config
 import globals.token
@@ -309,15 +310,21 @@ class SPBackupApp(WxAsyncApp):
                 f'New Track added {data["item"].track.name}')
         elif event == BET.BACKUP_ERROR:
             globals.logger.console(
-                f'{data["type"]} in - ({data["function_name"]}): {data["error"]}')
+                f'{data["type"]} in - ({data["function_name"]}): {data["error"]}', "error")
         elif event == BET.MAX_LIMIT_RATE_REACHED_RETRY:
             globals.logger.console(
-                f'Maximum limit reached. Trying again in {data["delay"]} seconds...')
+                f'Maximum limit reached. Trying again in {data["delay"]} seconds...', "warning")
         elif event == BET.BACKUP_SUCCESS:
-            wx.CallAfter(wx.MessageBox, message="All Backed up!!",
-                         caption="All done", style=wx.OK | wx.CENTER)
+            wx.CallAfter(UI.progress_dialog.complete())
         elif event == BET.BACKUP_START:
-            pass
+            # Load the Progress Dialog
+            wx.CallAfter(
+                ui.dialogs.loading.show_loading_dialog,
+                dialog=UI.progress_dialog,
+                range=data["playlist_info"].total, 
+                title="Backing up. This may take minutes to hours depending on your playlist library size...",
+                tasks=data["tasks"])
+
 
 def add_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()

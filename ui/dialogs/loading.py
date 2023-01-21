@@ -3,10 +3,11 @@ import asyncio
 from datetime import datetime
 from typing import List
 
+
 class LoadingDialog(wx.Dialog):
-    def __init__(self, 
-                 parent: wx.Window, 
-                 max_range: int, 
+    def __init__(self,
+                 parent: wx.Window,
+                 max_range: int,
                  title: str,
                  tasks: List[asyncio.Task]):
         """loads an async loading progress dialog with text output
@@ -18,11 +19,12 @@ class LoadingDialog(wx.Dialog):
             tasks (List[asyncio.Task]): list of Tasks to cancel if user pressed the cancel button
         """
         wx.Dialog.__init__(
-            self, parent, title="Loading...", style=wx.CAPTION|wx.CLOSE)
+            self, parent, title="Loading...", style=wx.CAPTION | wx.CLOSE)
 
         self.tasks = tasks
 
-        self.textbox = wx.TextCtrl(self, style=wx.TE_MULTILINE|wx.TE_READONLY|wx.HSCROLL)
+        self.textbox = wx.TextCtrl(
+            self, style=wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL)
 
         # Create wxGauge
         self.gauge = wx.Gauge(
@@ -46,22 +48,23 @@ class LoadingDialog(wx.Dialog):
 
         self.SetSize((400, 400))
         self.Center()
-    
+
     def OnClose(self, evt: wx.CommandEvent):
         pass
-    
+
     def ShowModalWithText(self, text: str):
         self.reset(0, text)
         return super().ShowModal()
-    
+
     def cancel_tasks(self):
         for task in self.tasks:
             task.cancel()
-    
+
     def OnCancel(self, evt: wx.CommandEvent):
-        self.cancel_tasks()
+        if self.cancel_button.GetValue() == "Cancel":
+            self.cancel_tasks()
         wx.CallAfter(self.EndModal(wx.ID_CANCEL))
-    
+
     def reset(self, range: int, text: str):
         self.gauge.SetRange(range)
         self.gauge.SetValue(0)
@@ -73,7 +76,7 @@ class LoadingDialog(wx.Dialog):
         """
         value: int = self.gauge.GetValue()
         self.gauge.SetValue(value + 1)
-    
+
     def append_text(self, text: str):
         """appends text to new line and scrolls window down if bottom of textctrl
 
@@ -90,3 +93,25 @@ class LoadingDialog(wx.Dialog):
         now = datetime.now()
         time_str = now.strftime("%d-%m-%y %H:%M:%S")
         self.append_text(f"Task completed on: {time_str}")
+        # change the label to Close as that indicates to not cancel any running tasks
+        self.cancel_button.SetLabel("Close")
+
+
+# for global dialog instance
+def show_loading_dialog(dialog: LoadingDialog, range: int, title: str, tasks: List[asyncio.Task]):
+    if dialog is not None and dialog.IsShown():
+        raise RuntimeError(
+            "Loading Dialog instance already exists. Please close the other Dialog first")
+    dialog = LoadingDialog(max_range=range, title=title, tasks=tasks)
+    dialog.Show(show=True)
+    # call dialog.complete() to destroy the dialog
+
+
+def update_loading_dialog(dialog: LoadingDialog, line: str):
+    if dialog is None or not dialog.IsShown():
+        raise RuntimeError(
+            "Cannot update Progress as Dialog has not been created or is not Showing")
+    dialog.update_progress()
+    dialog.append_text(text=line)
+
+

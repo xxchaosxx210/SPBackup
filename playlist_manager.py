@@ -217,8 +217,10 @@ class PlaylistManager:
         # get the playlist information
         playlists_info: Playlists = await spotify.net.get_playlists(self.token, limit=50)
         # notify the main thread that backup is starting
+        current_task = asyncio.current_task(asyncio.get_event_loop())
         self.backup_callback(BackupEventType.BACKUP_START, {
-            "playlists_info": playlists_info
+            "playlists_info": playlists_info,
+            "tasks": [current_task]
         })
         await self.handle_playlists(
             backup_pk=backup_pk,
@@ -322,10 +324,10 @@ class PlaylistManager:
                 "item": playlist_item
             })
             # handle the playlist pagination
-            await self.handle_tracks(
-                playlist_pk=playlist_pk,
-                playlist_item=playlist_item,
-                limit_per_request=limit)
+            # await self.handle_tracks(
+            #     playlist_pk=playlist_pk,
+            #     playlist_item=playlist_item,
+            #     limit_per_request=limit)
 
     async def handle_playlists(
             self,
