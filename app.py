@@ -305,8 +305,9 @@ class SPBackupApp(WxAsyncApp):
                 parent=UI.main_frame, title="Database Error", message=message)
         elif event == BET.PLAYLIST_ADDED:
             wx.CallAfter(
-                ui.dialogs.loading.update_loading_dialog(
-                    dialog=UI.progress_dialog, line=f'[Playlist]: {data["item"].name}'))
+                ui.dialogs.loading.update_loading_dialog,
+                    dialog=UI.progress_dialog, 
+                    line=f'[Playlist]: {data["item"].name}')
         elif event == BET.TRACK_ADDED:
             globals.logger.console(
                 f'New Track added {data["item"].track.name}')
@@ -317,7 +318,7 @@ class SPBackupApp(WxAsyncApp):
             globals.logger.console(
                 f'Maximum limit reached. Trying again in {data["delay"]} seconds...', "warning")
         elif event == BET.BACKUP_SUCCESS:
-            wx.CallAfter(UI.progress_dialog.complete())
+            wx.CallAfter(UI.progress_dialog.complete)
         elif event == BET.BACKUP_START:
             # Load the Progress Dialog
             def _callback_dialog(dlg: ui.dialogs.loading.LoadingDialog):
