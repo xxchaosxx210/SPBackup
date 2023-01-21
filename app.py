@@ -316,7 +316,8 @@ class SPBackupApp(WxAsyncApp):
         elif event == BET.BACKUP_SUCCESS:
             wx.CallAfter(wx.MessageBox, message="All Backed up!!",
                          caption="All done", style=wx.OK | wx.CENTER)
-
+        elif event == BET.BACKUP_START:
+            pass
 
 def add_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()

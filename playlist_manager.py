@@ -216,6 +216,10 @@ class PlaylistManager:
             name=backup_name, description=backup_description)
         # get the playlist information
         playlists_info: Playlists = await spotify.net.get_playlists(self.token, limit=50)
+        # notify the main thread that backup is starting
+        self.backup_callback(BackupEventType.BACKUP_START, {
+            "playlists_info": playlists_info
+        })
         await self.handle_playlists(
             backup_pk=backup_pk,
             playlist_info=playlists_info, limit=50)
@@ -399,7 +403,7 @@ class PlaylistManager:
             if item.track is None:
                 pass
             artist_names = list(
-                    map(lambda artist: artist.name, item.track_artists_names))
+                map(lambda artist: artist.name, item.track_artists_names))
             artist_names = ",".join(artist_names)
             # ADD THE ALBUM FIRST
             cursor.execute('''
