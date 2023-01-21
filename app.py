@@ -309,11 +309,14 @@ class SPBackupApp(WxAsyncApp):
                     dialog=UI.progress_dialog, 
                     line=f'[Playlist]: {data["item"].name}')
         elif event == BET.TRACK_ADDED:
+            if data["item"].track is None:
+                pass
             globals.logger.console(
-                f'New Track added {data["item"].track.name}')
+                f'New Track added {data["item"].track_name}')
         elif event == BET.BACKUP_ERROR:
-            globals.logger.console(
-                f'{data["type"]} in - ({data["function_name"]}): {data["error"]}', "error")
+            wx.CallAfter(ui.dialogs.error.show_dialog,
+            parent=UI.main_frame, title="Backup Error", message=\
+                data["error"].__str__())
         elif event == BET.MAX_LIMIT_RATE_REACHED_RETRY:
             globals.logger.console(
                 f'Maximum limit reached. Trying again in {data["delay"]} seconds...', "warning")

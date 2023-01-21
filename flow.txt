@@ -1,3 +1,0 @@
-1. iterate through each playlist
-2. function that starts the process called 'start_backup' takes in a function callback
-3. 

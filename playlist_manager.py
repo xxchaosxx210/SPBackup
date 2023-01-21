@@ -27,8 +27,6 @@ from spotify.validators.playlists import Playlists
 from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.tracks import Tracks
 
-import globals.logger
-
 
 PLAYLIST_PATHNAME = "user_backups"
 # backed up playlists
@@ -184,15 +182,14 @@ class PlaylistManager:
         self.token: str = ""
         self.playlist_request_limit = 50
         self.tracks_request_limit = 50
-        self.max_playlists_tasks = 1
-        self.max_tracks_tasks = 10
+        self.max_playlists_tasks = 5
+        self.max_tracks_tasks = 5
 
     def handle_error_results_from_gather(self, function_name: str, results: List[Exception]):
         for result in results:
             if result is None:
                 continue
             if isinstance(result, Exception):
-                globals.logger.logging.exception(result.__str__())
                 self.backup_callback(BackupEventType.BACKUP_ERROR, {
                     "error": result.__str__(),
                     "function_name": function_name,
@@ -211,6 +208,7 @@ class PlaylistManager:
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
         try:
+            backups = await self.get_backups()
             PlaylistManager.backup_callback = callback
             self.token = token
             # insert the backup table here
@@ -229,8 +227,10 @@ class PlaylistManager:
                 playlist_info=playlists_info, limit=50)
             callback(BackupEventType.BACKUP_SUCCESS, None)
         except Exception as err:
-            globals.logger.logging.exception(err.__str__())
-
+            self.backup_callback(BackupEventType.BACKUP_ERROR, {
+                "error": err})
+        finally:
+            return
 
     @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
     async def get_playlists_with_retry(self, *args, **kwargs) -> Playlists:
@@ -254,8 +254,6 @@ class PlaylistManager:
             offset (int): the current offset
             limit_per_request (int): the amount of tracks to return (Maximum is 50)
         """
-        # globals.logger.console(
-        #     f'Fetching next tracks from Playlist ID {playlist_id} offset: {offset}')
         tracks = await self.get_tracks_with_retry(
             access_token=self.token,
             playlist_id=playlist_id,
@@ -329,10 +327,10 @@ class PlaylistManager:
                 "item": playlist_item
             })
             # handle the playlist pagination
-            # await self.handle_tracks(
-            #     playlist_pk=playlist_pk,
-            #     playlist_item=playlist_item,
-            #     limit_per_request=limit)
+            await self.handle_tracks(
+                playlist_pk=playlist_pk,
+                playlist_item=playlist_item,
+                limit_per_request=limit)
 
     async def handle_playlists(
             self,
@@ -385,6 +383,12 @@ class PlaylistManager:
             # result: any = cursor.fetchone()[0]
             id: int = cursor.lastrowid
             return id
+
+    async def get_backups(self) -> list:
+        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+            cursor.execute('SELECT * from Backups')
+            backups = cursor.fetchall()
+            return backups
 
     async def insert_playlist_db(self, item: PlaylistItem, backup_id: int) -> int:
         """insert the playlist into the database file
