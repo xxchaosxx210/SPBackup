@@ -184,7 +184,7 @@ class PlaylistManager:
         self.token: str = ""
         self.playlist_request_limit = 50
         self.tracks_request_limit = 50
-        self.max_playlists_tasks = 5
+        self.max_playlists_tasks = 1
         self.max_tracks_tasks = 10
 
     def handle_error_results_from_gather(self, function_name: str, results: List[Exception]):
@@ -209,23 +209,27 @@ class PlaylistManager:
         Args:
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
-        PlaylistManager.backup_callback = callback
-        self.token = token
-        # insert the backup table here
-        backup_pk: int = await self.add_backup(
-            name=backup_name, description=backup_description)
-        # get the playlist information
-        playlists_info: Playlists = await spotify.net.get_playlists(self.token, limit=50)
-        # notify the main thread that backup is starting
-        current_task = asyncio.current_task(asyncio.get_event_loop())
-        self.backup_callback(BackupEventType.BACKUP_START, {
-            "playlists_info": playlists_info,
-            "tasks": [current_task]
-        })
-        await self.handle_playlists(
-            backup_pk=backup_pk,
-            playlist_info=playlists_info, limit=50)
-        callback(BackupEventType.BACKUP_SUCCESS, None)
+        try:
+            PlaylistManager.backup_callback = callback
+            self.token = token
+            # insert the backup table here
+            backup_pk: int = await self.add_backup(
+                name=backup_name, description=backup_description)
+            # get the playlist information
+            playlists_info: Playlists = await spotify.net.get_playlists(self.token, limit=50)
+            # notify the main thread that backup is starting
+            current_task = asyncio.current_task(asyncio.get_event_loop())
+            self.backup_callback(BackupEventType.BACKUP_START, {
+                "playlists_info": playlists_info,
+                "tasks": [current_task]
+            })
+            await self.handle_playlists(
+                backup_pk=backup_pk,
+                playlist_info=playlists_info, limit=50)
+            callback(BackupEventType.BACKUP_SUCCESS, None)
+        except Exception as err:
+            globals.logger.logging.exception(err.__str__())
+
 
     @retry_on_limit_exceeded(delay=1, timeout_factor=0.1)
     async def get_playlists_with_retry(self, *args, **kwargs) -> Playlists:

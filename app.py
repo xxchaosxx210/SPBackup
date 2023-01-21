@@ -304,7 +304,9 @@ class SPBackupApp(WxAsyncApp):
                 ui.dialogs.error.show_dialog,
                 parent=UI.main_frame, title="Database Error", message=message)
         elif event == BET.PLAYLIST_ADDED:
-            globals.logger.console(f'Playlist Added: {data["item"].name}')
+            wx.CallAfter(
+                ui.dialogs.loading.update_loading_dialog(
+                    dialog=UI.progress_dialog, line=f'[Playlist]: {data["item"].name}'))
         elif event == BET.TRACK_ADDED:
             globals.logger.console(
                 f'New Track added {data["item"].track.name}')
@@ -318,10 +320,14 @@ class SPBackupApp(WxAsyncApp):
             wx.CallAfter(UI.progress_dialog.complete())
         elif event == BET.BACKUP_START:
             # Load the Progress Dialog
+            def _callback_dialog(dlg: ui.dialogs.loading.LoadingDialog):
+                UI.progress_dialog = dlg
             wx.CallAfter(
                 ui.dialogs.loading.show_loading_dialog,
+                parent=UI.main_frame,
                 dialog=UI.progress_dialog,
-                range=data["playlist_info"].total, 
+                callback=_callback_dialog,
+                range=data["playlists_info"].total, 
                 title="Backing up. This may take minutes to hours depending on your playlist library size...",
                 tasks=data["tasks"])
 

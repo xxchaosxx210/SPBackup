@@ -1,7 +1,7 @@
 import wx
 import asyncio
 from datetime import datetime
-from typing import List
+from typing import List, Callable
 
 
 class LoadingDialog(wx.Dialog):
@@ -98,12 +98,38 @@ class LoadingDialog(wx.Dialog):
 
 
 # for global dialog instance
-def show_loading_dialog(dialog: LoadingDialog, range: int, title: str, tasks: List[asyncio.Task]):
+def show_loading_dialog(
+        parent: wx.Window,
+        dialog: LoadingDialog,
+        callback: Callable[[LoadingDialog], None],
+        range: int,
+        title: str,
+        tasks: List[asyncio.Task]):
+    """these are long winded function parameters. so the callback is for
+    assigning the global instance of the LoadingDialog. The problem passing
+    the global instance as a reference if the instance is equal to None
+    obviously doesnt have an address yet so to counter act this I added a callback
+    which takes in callback(LoadingDialog) to allow to keep a reference of the global
+    LoadingDialog...
+
+    Args:
+        parent (wx.Window): the parent window to which this dialog belongs
+        dialog (LoadingDialog): global instance if not is None
+        callback (Callable[[LoadingDialog], None]): the callback to notify the new instance of the loading dialog
+        range (int): maximum range of the progress
+        title (str): the first line in the console
+        tasks (List[asyncio.Task]): the tasks to cancel if the cancel button is pressed
+
+    Raises:
+        RuntimeError: will be raised if trying to create a new dialog while the exsiting one is still showing
+    """
     if dialog is not None and dialog.IsShown():
         raise RuntimeError(
             "Loading Dialog instance already exists. Please close the other Dialog first")
-    dialog = LoadingDialog(max_range=range, title=title, tasks=tasks)
+    dialog = LoadingDialog(parent=parent, max_range=range,
+                           title=title, tasks=tasks)
     dialog.Show(show=True)
+    callback(dialog)
     # call dialog.complete() to destroy the dialog
 
 
@@ -113,5 +139,3 @@ def update_loading_dialog(dialog: LoadingDialog, line: str):
             "Cannot update Progress as Dialog has not been created or is not Showing")
     dialog.update_progress()
     dialog.append_text(text=line)
-
-
