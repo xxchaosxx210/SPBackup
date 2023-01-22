@@ -22,26 +22,38 @@ class RestorePanel(wx.Panel):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.SetBackgroundColour(wx.GREEN)
         self.restore_lisctrl = BackupsListCtrl(parent=self, style=wx.LC_REPORT)
-        self.panel = wx.Panel(self)
-        self.panel.SetBackgroundColour(wx.RED)
         gbs = wx.GridBagSizer()
         gbs.Add(self.restore_lisctrl, pos=(0, 0), flag=wx.EXPAND | wx.ALL)
-        gbs.Add(self.panel, pos=(1, 0), flag=wx.EXPAND | wx.ALL)
         gbs.AddGrowableCol(0, 1)
         gbs.AddGrowableRow(0, 1)
         self.SetSizerAndFit(gbs)
 
+
+class ButtonPanel(wx.Panel):
+
+    def __init__(self, *args, **kw):
+        super().__init__(*args, **kw)
+        self.SetBackgroundColour(wx.GREEN)
+        restore_btn = wx.Button(parent=self, id=wx.ID_OK)
+        cancel_btn = wx.Button(parent=self, id=wx.ID_CANCEL)
+        gs = wx.GridSizer(1, 2, 0, 0)
+        gs.Add(restore_btn, 0)
+        gs.Add(cancel_btn, 0)
+        self.SetSizerAndFit(gs)
 
 class RestoreDialog(wx.Dialog):
 
     def __init__(self, parent):
         super().__init__(parent=parent, title="Restore Backup",
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
-        self.panel = RestorePanel(parent=self)
-        gs = wx.GridSizer(cols=1)
-        gs.Add(self.panel, proportion=1, flag=wx.ALL | wx.EXPAND)
+        self.main_panel = RestorePanel(parent=self)
+        self.button_panel = ButtonPanel(parent=self)
+        gs = wx.GridBagSizer()
+        gs.Add(self.main_panel, pos=(0, 0), flag=wx.ALL|wx.EXPAND|wx.BOTH)
+        gs.Add(self.button_panel, pos=(1, 0), flag=wx.ALIGN_CENTER_HORIZONTAL)
+        gs.AddGrowableCol(0, 1)
+        gs.AddGrowableRow(0, 1)
         self.SetSizerAndFit(gs)
         self.SetSize((800, 600))
         self.CenterOnParent()
