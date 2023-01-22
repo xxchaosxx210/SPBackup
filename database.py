@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import(
+from typing import (
     List,
 )
 
@@ -54,7 +54,8 @@ class Playlist:
 
 
 class Track:
-    def __init__(self, id: int, uri: str, name: str, playlist_id: int, artists_id: int, album_id: int):
+    def __init__(
+        self, id: int, uri: str, name: str, playlist_id: int, artists_id: int, album_id: int):
         self.id = id
         self.uri = uri
         self.name = name
@@ -115,7 +116,7 @@ class LocalDatabase:
     async def get_playlists(self, backup_pk: int) -> list:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
             await cursor.execute(f'SELECT * from Playlists WHERE backup_id={backup_pk}')
-            playlists = cursor.fetchall()
+            playlists = await cursor.fetchall()
             return playlists
 
     async def get_backup_from_date_added(self, date_added: str) -> tuple:
