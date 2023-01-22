@@ -27,46 +27,13 @@ from spotify.validators.playlists import Playlists
 from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.tracks import Tracks
 
+import database
+
 
 PLAYLIST_PATHNAME = "user_backups"
 # backed up playlists
 DATABASE_FILENAME = "playlists.db"
 PLAYLIST_DIR: str = ""
-
-"""
-@dataclass
-class Backups:
-    id: int
-    name: str
-    description: str
-    date_added: int
-
-@dataclass
-Playlist:
-    id: int
-    backups_id: int     #foreign key
-    name: str
-    description: str
-
-@dataclass
-Track
-    id: int
-    playlist_id: int    #foreign key
-    artists_id: int     #foreign key
-    album_id: int       #foreign key
-    uri: str
-    name: str
-
-@dataclass
-Artists:
-    id: int
-    name: str
-
-@dataclass
-Album:
-    id: int
-    name: str
-"""
 
 
 class BackupEventType(Enum):
@@ -184,6 +151,7 @@ class PlaylistManager:
         self.tracks_request_limit = 50
         self.max_playlists_tasks = 5
         self.max_tracks_tasks = 5
+        self.sql_engine: database.sqlalchemy.engine.Engine = None
 
     def handle_error_results_from_gather(self, function_name: str, results: List[Exception]):
         for result in results:
@@ -208,7 +176,6 @@ class PlaylistManager:
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
         try:
-            backups = await self.get_backups()
             PlaylistManager.backup_callback = callback
             self.token = token
             # insert the backup table here
@@ -384,11 +351,32 @@ class PlaylistManager:
             id: int = cursor.lastrowid
             return id
 
-    async def get_backups(self) -> list:
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
-            cursor.execute('SELECT * from Backups')
-            backups = cursor.fetchall()
-            return backups
+    async def create_backup_directory(self, user: SpotifyUser) -> str:
+        """creates a folder named after the UserID if doesnt exist
+        then it creates a sqlite database if one doesnt exist. Then it
+        adds a table named user with the user details
+
+        Args:
+            path (str): the exact path of the apps settings
+
+        Returns:
+            str: returns the pathname to where the database was created
+        """
+        user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
+        if user is None:
+            raise TypeError("User in create_backup_directory does not exist")
+        self.user = user
+        try:
+            os.makedirs(user_path, exist_ok=False)
+            spotify.debugging.file_log(
+                f"Could not find playlist user path creating a new one... {user_path}", "info")
+        except OSError:
+            # path already exists
+            pass
+        finally:
+            self.db_path = os.path.join(user_path, DATABASE_FILENAME)
+            # await self.create_tables()
+            return self.db_path
 
     async def insert_playlist_db(self, item: PlaylistItem, backup_id: int) -> int:
         """insert the playlist into the database file
@@ -431,33 +419,6 @@ class PlaylistManager:
             (?, ?, ?, ?, ?)''', (item.track_uri, item.track_name, playlist_pk, artists_id, album_id))
             track_id = cursor.lastrowid
             return track_id
-
-    async def create_backup_directory(self, user: SpotifyUser) -> str:
-        """creates a folder named after the UserID if doesnt exist
-        then it creates a sqlite database if one doesnt exist. Then it
-        adds a table named user with the user details
-
-        Args:
-            path (str): the exact path of the apps settings
-
-        Returns:
-            str: returns the pathname to where the database was created
-        """
-        user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
-        if user is None:
-            raise TypeError("User in create_backup_directory does not exist")
-        self.user = user
-        try:
-            os.makedirs(user_path, exist_ok=False)
-            spotify.debugging.file_log(
-                f"Could not find playlist user path creating a new one... {user_path}", "info")
-        except OSError:
-            # path already exists
-            pass
-        finally:
-            self.db_path = os.path.join(user_path, DATABASE_FILENAME)
-            await self.create_tables()
-            return self.db_path
 
     async def create_tables(self):
         with BackupSQlite(self.db_path, self.on_database_error) as cursor:
