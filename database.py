@@ -79,7 +79,7 @@ class LocalDatabase:
             backup = cursor.fetchone()
             return backup
 
-    async def insert_playlist_db(self, item: PlaylistItem, backup_id: int) -> int:
+    async def insert_playlist(self, item: PlaylistItem, backup_id: int) -> int:
         """insert the playlist into the database file
 
         Args:
@@ -98,7 +98,7 @@ class LocalDatabase:
             playlist_id = cursor.lastrowid
             return playlist_id
 
-    async def insert_track_db(self, item: TrackItem, playlist_pk: int) -> int:
+    async def insert_track(self, item: TrackItem, playlist_pk: int) -> int:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
             if item.track is None:
                 pass
