@@ -190,6 +190,7 @@ class PlaylistManager:
             self.token = token
             # create the database tables if none exist
             await self.local_db.create_tables()
+            backups = await self.local_db.get_backups()
             # insert the backup table here
             backup_pk: int = await self.local_db.add_backup(
                 name=backup_name, description=backup_description)

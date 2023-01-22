@@ -1,5 +1,8 @@
 import os
 from datetime import datetime
+from typing import(
+    List,
+)
 
 import aiosqlite
 
@@ -29,6 +32,47 @@ class BackupSQlite:
             self.error_handler(type, value, exception)
             return False
         return True
+
+
+class Backup:
+    def __init__(self, id: int, name: str, description: str, date_added: datetime):
+        self.id = id
+        self.name = name
+        self.description = description
+        self.date_added = date_added
+
+
+class Playlist:
+    def __init__(self, id: int, playlist_id: str, uri: str, name: str, description: str, total_songs: int, backup_id: int):
+        self.id = id
+        self.playlist_id = playlist_id
+        self.uri = uri
+        self.name = name
+        self.description = description
+        self.total_songs = total_songs
+        self.backup_id = backup_id
+
+
+class Track:
+    def __init__(self, id: int, uri: str, name: str, playlist_id: int, artists_id: int, album_id: int):
+        self.id = id
+        self.uri = uri
+        self.name = name
+        self.playlist_id = playlist_id
+        self.artists_id = artists_id
+        self.album_id = album_id
+
+
+class Album:
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
+
+
+class Artist:
+    def __init__(self, id: int, name: str):
+        self.id = id
+        self.name = name
 
 
 class LocalDatabase:
@@ -61,10 +105,11 @@ class LocalDatabase:
             id: int = cursor.lastrowid
             return id
 
-    async def get_backups(self) -> list:
+    async def get_backups(self) -> List[Backup]:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
             await cursor.execute('SELECT * from Backups')
-            backups = cursor.fetchall()
+            rows = await cursor.fetchall()
+            backups = list(map(lambda row: Backup(*row), rows))
             return backups
 
     async def get_playlists(self, backup_pk: int) -> list:
