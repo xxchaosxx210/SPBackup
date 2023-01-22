@@ -391,6 +391,18 @@ class PlaylistManager:
             backups = cursor.fetchall()
             return backups
 
+    async def get_playlists(self, backup_pk: int) -> list:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+            await cursor.execute(f'SELECT * from Playlists WHERE backup_id={backup_pk}')
+            playlists = cursor.fetchall()
+            return playlists
+
+    async def get_backup_from_date_added(self, date_added: str) -> tuple:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+            await cursor.execute(f'''SELECT * FROM Backups WHERE date_added="{date_added}"''')
+            backup = cursor.fetchone()
+            return backup
+
     async def insert_playlist_db(self, item: PlaylistItem, backup_id: int) -> int:
         """insert the playlist into the database file
 
@@ -406,7 +418,7 @@ class PlaylistManager:
             INSERT INTO Playlists 
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
             (?, ?, ?, ?, ?, ?)''',
-                           (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
+                                 (item.id, item.uri, item.name, item.description, item.tracks.total, backup_id))
             playlist_id = cursor.lastrowid
             return playlist_id
 
