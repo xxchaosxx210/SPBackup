@@ -3,7 +3,6 @@ playlist_manager.py - handles the users playlists and backs up and restores them
 and json
 """
 
-import sqlite3
 import os
 import asyncio
 from datetime import datetime
@@ -18,6 +17,8 @@ from typing import (
     List
 )
 
+import aiosqlite
+
 import spotify.debugging
 import spotify.net
 import spotify.constants
@@ -26,7 +27,6 @@ from spotify.validators.playlists import Item as PlaylistItem
 from spotify.validators.playlists import Playlists
 from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.tracks import Tracks
-
 
 PLAYLIST_PATHNAME = "user_backups"
 # backed up playlists
@@ -110,15 +110,17 @@ class BackupSQlite:
         self.filepath = filepath
         self.error_handler = error_handler
 
-    def __enter__(self, *args, **kwargs) -> sqlite3.Cursor:
-        self.conn = sqlite3.connect(self.filepath)
-        return self.conn.cursor()
+    async def __aenter__(self, *args, **kwargs) -> aiosqlite.Cursor:
+        self.conn = await aiosqlite.connect(self.filepath)
+        cursor = await self.conn.cursor()
+        return cursor
 
-    def __exit__(self, type: Exception, value: any, exception: object):
-        self.conn.commit()
-        self.conn.close()
+    async def __aexit__(self, type: Exception, value: any, exception: object):
+        await self.conn.commit()
+        await self.conn.close()
         if type:
             self.error_handler(type, value, exception)
+            print(exception)
             return False
         return True
 
@@ -208,7 +210,6 @@ class PlaylistManager:
             callback (BACKUP_CALLBACK_TYPE): the callback to the main thread
         """
         try:
-            backups = await self.get_backups()
             PlaylistManager.backup_callback = callback
             self.token = token
             # insert the backup table here
@@ -374,7 +375,7 @@ class PlaylistManager:
             int: the Backup Primary Key ID
         """
         date_added = datetime.now()
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, date_added))
@@ -385,7 +386,7 @@ class PlaylistManager:
             return id
 
     async def get_backups(self) -> list:
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             cursor.execute('SELECT * from Backups')
             backups = cursor.fetchall()
             return backups
@@ -400,7 +401,7 @@ class PlaylistManager:
         Returns:
             int: the ID of the playlist
         """
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             cursor.execute('''
             INSERT INTO Playlists 
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
@@ -410,7 +411,7 @@ class PlaylistManager:
             return playlist_id
 
     async def insert_track_db(self, item: TrackItem, playlist_pk: int) -> int:
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             if item.track is None:
                 pass
             artist_names = list(
@@ -460,7 +461,7 @@ class PlaylistManager:
             return self.db_path
 
     async def create_tables(self):
-        with BackupSQlite(self.db_path, self.on_database_error) as cursor:
+        async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
             # setup the database
             await self.create_backup_table(cursor)
             await self.create_playlists_table(cursor)
@@ -468,15 +469,15 @@ class PlaylistManager:
             await self.create_artists_table(cursor)
             await self.create_track_table(cursor)
 
-    async def create_backup_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''CREATE TABLE IF NOT EXISTS Backups (
+    async def create_backup_table(self, cursor: aiosqlite.Cursor):
+        await cursor.execute('''CREATE TABLE IF NOT EXISTS Backups (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         name TEXT,
                         description TEXT,
                         date_added DATETIME NOT NULL);''')
 
-    async def create_playlists_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''CREATE TABLE IF NOT EXISTS Playlists (
+    async def create_playlists_table(self, cursor: aiosqlite.Cursor):
+        await cursor.execute('''CREATE TABLE IF NOT EXISTS Playlists (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             playlist_id TEXT NOT NULL,
             uri TEXT NOT NULL,
@@ -487,8 +488,8 @@ class PlaylistManager:
             FOREIGN KEY (backup_id) REFERENCES Backups(id));
         ''')
 
-    async def create_track_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''
+    async def create_track_table(self, cursor: aiosqlite.Cursor):
+        await cursor.execute('''
         CREATE TABLE IF NOT EXISTS Tracks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             uri TEXT NOT NULL,
@@ -502,16 +503,16 @@ class PlaylistManager:
         );
         ''')
 
-    async def create_album_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''
+    async def create_album_table(self, cursor: aiosqlite.Cursor):
+        await cursor.execute('''
         CREATE TABLE IF NOT EXISTS Albums(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT
         );
         ''')
 
-    async def create_artists_table(self, cursor: sqlite3.Cursor):
-        cursor.execute('''
+    async def create_artists_table(self, cursor: aiosqlite.Cursor):
+        await cursor.execute('''
         CREATE TABLE IF NOT EXISTS Artists(
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT
