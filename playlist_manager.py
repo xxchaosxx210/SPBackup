@@ -376,10 +376,10 @@ class PlaylistManager:
         """
         date_added = datetime.now()
         async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
-            cursor.execute('''
+            await cursor.execute('''
             INSERT INTO Backups (name, description, date_added)
             VALUES(?, ?, ?)''', (name, description, date_added))
-            # cursor.execute(
+            # await cursor.execute(
             #     "SELECT id from Backups WHERE date_added = ?", (date_added,))
             # result: any = cursor.fetchone()[0]
             id: int = cursor.lastrowid
@@ -387,7 +387,7 @@ class PlaylistManager:
 
     async def get_backups(self) -> list:
         async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
-            cursor.execute('SELECT * from Backups')
+            await cursor.execute('SELECT * from Backups')
             backups = cursor.fetchall()
             return backups
 
@@ -402,7 +402,7 @@ class PlaylistManager:
             int: the ID of the playlist
         """
         async with BackupSQlite(self.db_path, self.on_database_error) as cursor:
-            cursor.execute('''
+            await cursor.execute('''
             INSERT INTO Playlists 
             (playlist_id, uri, name, description, total_songs, backup_id) VALUES 
             (?, ?, ?, ?, ?, ?)''',
@@ -418,15 +418,15 @@ class PlaylistManager:
                 map(lambda artist: artist.name, item.track_artists_names))
             artist_names = ",".join(artist_names)
             # ADD THE ALBUM FIRST
-            cursor.execute('''
+            await cursor.execute('''
             INSERT INTO Albums (name) VALUES (?)''', (item.track_album_name,))
             album_id = cursor.lastrowid
             # JOIN THE ARTISTS TOGETHER AND ADD THEM
-            cursor.execute('''
+            await cursor.execute('''
             INSERT INTO Artists (name) VALUES (?)''', (artist_names,))
             artists_id = cursor.lastrowid
             # NOW ADD THE TRACK INFORMATION
-            cursor.execute('''
+            await cursor.execute('''
             INSERT INTO Tracks 
             (uri, name, playlist_id, artists_id, album_id) VALUES 
             (?, ?, ?, ?, ?)''', (item.track_uri, item.track_name, playlist_pk, artists_id, album_id))
