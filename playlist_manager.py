@@ -16,8 +16,6 @@ from typing import (
     List
 )
 
-import aiosqlite
-
 import spotify.debugging
 import spotify.net
 import spotify.constants

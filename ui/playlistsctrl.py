@@ -4,7 +4,11 @@ import asyncio
 import wx.lib.mixins.listctrl as listmix
 
 from spotify.validators.playlists import Item as PlaylistsItem
-from globals.state import SpotifyState, UI, UserState
+from globals.state import (
+    SpotifyState,
+    UI,
+    UserState
+)
 from ui.navbuttonpanel import NavButtonPanel
 from ui.dialogs.restore import RestoreDialog
 
@@ -55,9 +59,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
                 token, app.playlists_backup_handler, "Test", "This is a test purpose entry only"))
 
     def on_restore_click(self, evt: wx.CommandEvent):
-        dlg = RestoreDialog(self)
-        dlg.ShowModal()
-        dlg.Destroy()
+        if isinstance(UI.restore_dialog, wx.Dialog) and UI.restore_dialog.IsShown():
+            return
+        UI.restore_dialog = RestoreDialog(self)
+        result: int = UI.restore_dialog.ShowModal()
+        if result != wx.ID_OK:
+            return
 
 
 class PlaylistsToolBar(wx.Panel):

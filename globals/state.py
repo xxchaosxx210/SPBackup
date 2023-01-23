@@ -16,6 +16,7 @@ from spotify.validators.playlist import Tracks as PlaylistTracks
 from spotify.validators.playlists import Playlists
 
 from ui.dialogs.loading import LoadingDialog
+from ui.dialogs.restore import RestoreDialog
 
 
 class UI:
@@ -33,6 +34,7 @@ class UI:
     playlists_spw: wx.SplitterWindow = None
     statusbar: wx.StatusBar = None
     progress_dialog: LoadingDialog = None
+    restore_dialog: RestoreDialog = None
 
 
 class Global:

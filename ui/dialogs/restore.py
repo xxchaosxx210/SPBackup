@@ -1,4 +1,10 @@
+from typing import (
+    List,
+)
+
 import wx
+
+import database
 
 
 class BackupsListCtrl(wx.ListCtrl):
@@ -17,6 +23,18 @@ class BackupsListCtrl(wx.ListCtrl):
         self.SetColumnWidth(2, 3*width/5)
         event.Skip()
 
+    def populate(self, backups: List[database.Backup]):
+        for index, backup in enumerate(backups):
+            # self.InsertStringItem(backup.id, backup.date_added.strftime('%d-%m-%Y %H:%M:%S'))
+            # self.SetStringItem(backup.id, 1, backup.name)
+            # self.SetStringItem(backup.id, 2, backup.description)
+            self.add_backup(index, backup)
+
+    def add_backup(self, index: int, backup: database.Backup) -> None:
+        self.InsertItem(index, label=backup.date_added)
+        self.SetItem(index, 1, label=backup.name)
+        self.SetItem(index, 2, label=backup.description)
+
 
 class RestorePanel(wx.Panel):
 
@@ -34,13 +52,13 @@ class ButtonPanel(wx.Panel):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.SetBackgroundColour(wx.GREEN)
-        restore_btn = wx.Button(parent=self, id=wx.ID_OK)
-        cancel_btn = wx.Button(parent=self, id=wx.ID_CANCEL)
+        restore_btn = wx.Button(parent=self, id=wx.ID_OK, label="Restore")
+        cancel_btn = wx.Button(parent=self, id=wx.ID_CANCEL, label="Cancel")
         gs = wx.GridSizer(1, 2, 0, 0)
         gs.Add(restore_btn, 0)
         gs.Add(cancel_btn, 0)
         self.SetSizerAndFit(gs)
+
 
 class RestoreDialog(wx.Dialog):
 
@@ -50,10 +68,19 @@ class RestoreDialog(wx.Dialog):
         self.main_panel = RestorePanel(parent=self)
         self.button_panel = ButtonPanel(parent=self)
         gs = wx.GridBagSizer()
-        gs.Add(self.main_panel, pos=(0, 0), flag=wx.ALL|wx.EXPAND|wx.BOTH)
+        gs.Add(self.main_panel, pos=(0, 0), flag=wx.ALL | wx.EXPAND | wx.BOTH)
         gs.Add(self.button_panel, pos=(1, 0), flag=wx.ALIGN_CENTER_HORIZONTAL)
         gs.AddGrowableCol(0, 1)
         gs.AddGrowableRow(0, 1)
         self.SetSizerAndFit(gs)
         self.SetSize((800, 600))
         self.CenterOnParent()
+
+        self.Bind(wx.EVT_INIT_DIALOG, self.on_init)
+
+    def on_init(self, evt: wx.CommandEvent):
+        # load the backups
+        pass
+
+    def on_database_event():
+        pass

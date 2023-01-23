@@ -1,4 +1,4 @@
-import os
+import enum
 from datetime import datetime
 from typing import (
     List,
@@ -9,6 +9,13 @@ import aiosqlite
 from spotify.validators.user import User as SpotifyUser
 from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.playlists import Item as PlaylistItem
+
+
+class DatabaseEvent(enum.Enum):
+
+    EVENT_BACKUP = enum.auto()
+    EVENT_PLAYLIST = enum.auto()
+    EVENT_TRACK = enum.auto()
 
 
 class BackupSQlite:
@@ -55,7 +62,7 @@ class Playlist:
 
 class Track:
     def __init__(
-        self, id: int, uri: str, name: str, playlist_id: int, artists_id: int, album_id: int):
+            self, id: int, uri: str, name: str, playlist_id: int, artists_id: int, album_id: int):
         self.id = id
         self.uri = uri
         self.name = name
