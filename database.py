@@ -119,6 +119,12 @@ class LocalDatabase:
             rows = await cursor.fetchall()
             backups = list(map(lambda row: Backup(*row), rows))
             return backups
+    
+    async def iter_backups(self, offset: int = 0, limit: int = 100):
+        async with BackupSQlite(self.path, self.error_handler) as cursor:
+            await cursor.execute(f'SELECT * from Backups LIMIT {limit} OFFSET {offset}')
+            async for row in cursor:
+                yield Backup(*row)
 
     async def get_playlists(self, backup_pk: int) -> list:
         async with BackupSQlite(self.path, self.error_handler) as cursor:

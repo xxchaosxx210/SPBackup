@@ -1,11 +1,68 @@
 from typing import (
     List,
 )
+import asyncio
 
 import wx
+import wxasync
 
 import database
+import globals
 
+
+class PaginatePanel(wx.Panel):
+
+    def __init__(self, title: str, columns: List[dict], *args, **kw):
+        super().__init__(*args, **kw)
+
+        staticbox = wx.StaticBox(self, label=title)
+        static_sizer = wx.StaticBoxSizer(staticbox, wx.VERTICAL)
+
+        self.listctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
+        self.create_columns(columns)
+
+        self.prev_button = wx.Button(self, label="Prev")
+        self.next_button = wx.Button(self, label="Next")
+
+        button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        button_sizer.Add(self.prev_button, proportion=0)
+        button_sizer.Add(self.next_button, proportion=0)
+
+        static_sizer.Add(self.listctrl, 1, flag=wx.EXPAND | wx.ALL)
+        static_sizer.Add(button_sizer, flag=wx.ALIGN_CENTER)
+
+        self.SetSizerAndFit(static_sizer)
+
+    def create_columns(self, columns: List[dict]):
+        for index, column in enumerate(columns):
+            self.listctrl.InsertColumn(
+                index, column["label"], width=column["width"])
+
+    def populate(self, objects: List[any]):
+        pass
+
+
+class BackupsListPanel(PaginatePanel):
+
+    def __init__(self, *args, **kw):
+        columns = [
+            {
+                "label": "Date Added",
+                "width": 100
+            },
+            {
+                "label": "Name",
+                "width": 100
+            },
+            {
+                "label": "Description",
+                "width": 300
+            }
+        ]
+        super().__init__(title="Backups", columns=columns, *args, **kw)
+
+    def populate(self, objects: List[any]):
+        return super().populate(objects)
 
 class BackupsListCtrl(wx.ListCtrl):
     def __init__(self, *args, **kwargs):
@@ -40,9 +97,9 @@ class RestorePanel(wx.Panel):
 
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
-        self.restore_lisctrl = BackupsListCtrl(parent=self, style=wx.LC_REPORT)
+        self.backups_listpanel = BackupsListPanel(parent=self)
         gbs = wx.GridBagSizer()
-        gbs.Add(self.restore_lisctrl, pos=(0, 0), flag=wx.EXPAND | wx.ALL)
+        gbs.Add(self.backups_listpanel, pos=(0, 0), flag=wx.EXPAND | wx.ALL)
         gbs.AddGrowableCol(0, 1)
         gbs.AddGrowableRow(0, 1)
         self.SetSizerAndFit(gbs)
@@ -62,7 +119,10 @@ class ButtonPanel(wx.Panel):
 
 class RestoreDialog(wx.Dialog):
 
-    def __init__(self, parent):
+    get_backup_task: asyncio.Task = None
+    instance: wx.Dialog = None
+
+    def __init__(self, parent: wx.Window):
         super().__init__(parent=parent, title="Restore Backup",
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.main_panel = RestorePanel(parent=self)
@@ -76,11 +136,30 @@ class RestoreDialog(wx.Dialog):
         self.SetSize((800, 600))
         self.CenterOnParent()
 
-        self.Bind(wx.EVT_INIT_DIALOG, self.on_init)
+        self.Bind(wx.EVT_CLOSE, self.on_close)
+        self.Bind(wx.EVT_SHOW, self.on_show)
 
-    def on_init(self, evt: wx.CommandEvent):
+    def on_close(self, evt: wx.CommandEvent):
+        task = RestoreDialog.get_backup_task
+        if task is not None and not task.done():
+            task.cancel()
+
+    def on_show(self, evt: wx.CommandEvent):
         # load the backups
-        pass
+        dlg: RestoreDialog = evt.GetEventObject()
+        if not dlg.IsShown():
+            RestoreDialog.get_backup_task = asyncio.create_task(
+                self.load_backups())
 
-    def on_database_event():
-        pass
+    async def load_backups(self):
+        # app = wx.GetApp()
+        # local_db: database.LocalDatabase = app.playlist_manager.local_db
+        # genfunc = await local_db.iter_backups(0, 1000)
+        # pass
+        globals.logger.console("Shown window")
+
+
+def load_dialog(parent: wx.Window):
+    if RestoreDialog.instance is not None and RestoreDialog.instance.IsShown():
+        return
+    RestoreDialog.instance = RestoreDialog(parent=parent)

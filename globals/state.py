@@ -6,10 +6,6 @@ state.py
 
 import threading
 import wx
-import asyncio
-import logging
-
-from typing import List
 
 from spotify.validators.playlist import Playlist
 from spotify.validators.playlist import Tracks as PlaylistTracks
