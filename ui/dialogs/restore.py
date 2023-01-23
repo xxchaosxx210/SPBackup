@@ -163,3 +163,4 @@ def load_dialog(parent: wx.Window):
     if RestoreDialog.instance is not None and RestoreDialog.instance.IsShown():
         return
     RestoreDialog.instance = RestoreDialog(parent=parent)
+    RestoreDialog.instance.ShowModal()

@@ -10,7 +10,7 @@ from globals.state import (
     UserState
 )
 from ui.navbuttonpanel import NavButtonPanel
-from ui.dialogs.restore import RestoreDialog
+import ui.dialogs.restore
 
 
 class PlaylistsNavButtonsPanel(NavButtonPanel):
@@ -59,12 +59,7 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
                 token, app.playlists_backup_handler, "Test", "This is a test purpose entry only"))
 
     def on_restore_click(self, evt: wx.CommandEvent):
-        if isinstance(UI.restore_dialog, wx.Dialog) and UI.restore_dialog.IsShown():
-            return
-        UI.restore_dialog = RestoreDialog(self)
-        result: int = UI.restore_dialog.ShowModal()
-        if result != wx.ID_OK:
-            return
+        ui.dialogs.restore.load_dialog(UI.main_frame)
 
 
 class PlaylistsToolBar(wx.Panel):
