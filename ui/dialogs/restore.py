@@ -9,7 +9,7 @@ import wxasync
 import database
 import globals
 import playlist_manager
-
+import image_manager
 
 class PaginatePanel(wx.Panel):
 
@@ -22,8 +22,8 @@ class PaginatePanel(wx.Panel):
         self.listctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.create_columns(columns)
 
-        self.prev_button = wx.Button(self, label="Prev")
-        self.next_button = wx.Button(self, label="Next")
+        self.prev_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("previous.png"))
+        self.next_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("next.png"))
 
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_sizer.Add(self.prev_button, proportion=0)
