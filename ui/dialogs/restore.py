@@ -8,6 +8,7 @@ import wxasync
 
 import database
 import globals
+import playlist_manager
 
 
 class PaginatePanel(wx.Panel):
@@ -56,13 +57,59 @@ class BackupsListPanel(PaginatePanel):
             },
             {
                 "label": "Description",
-                "width": 300
+                "width": 200
             }
         ]
         super().__init__(title="Backups", columns=columns, *args, **kw)
 
-    def populate(self, objects: List[any]):
-        return super().populate(objects)
+    async def populate(self, backups: List[database.Backup]):
+        for index, backup in enumerate(backups):
+            # self.InsertStringItem(backup.id, backup.date_added.strftime('%d-%m-%Y %H:%M:%S'))
+            # self.SetStringItem(backup.id, 1, backup.name)
+            # self.SetStringItem(backup.id, 2, backup.description)
+            await self.add_backup(index, backup)
+
+    async def add_backup(self, index: int, backup: database.Backup) -> None:
+        wx.CallAfter(self.listctrl.InsertItem, index=index, label=backup.date_added)
+        wx.CallAfter(self.listctrl.SetItem, index=index, column=1, label=backup.name)
+        wx.CallAfter(self.listctrl.SetItem, index=index, column=2, label=backup.description)
+
+
+class PlaylistsListPanel(PaginatePanel):
+
+    def __init__(self, *args, **kw):
+        columns = [
+            {
+                "label": "Name",
+                "width": 100
+            },
+            {
+                "label": "Description",
+                "width": 300
+            }
+        ]
+        super().__init__("Playlists", columns, *args, **kw)
+
+
+class TracksListPanel(PaginatePanel):
+
+    def __init__(self, *args, **kw):
+        columns = [
+            {
+                "label": "Name",
+                "width": 300
+            },
+            {
+                "label": "Artists",
+                "width": 100
+            },
+            {
+                "label": "Album",
+                "width": 100
+            }
+        ]
+        super().__init__("Songs", columns, *args, **kw)
+
 
 class BackupsListCtrl(wx.ListCtrl):
     def __init__(self, *args, **kwargs):
@@ -80,17 +127,17 @@ class BackupsListCtrl(wx.ListCtrl):
         self.SetColumnWidth(2, 3*width/5)
         event.Skip()
 
-    def populate(self, backups: List[database.Backup]):
+    async def populate(self, backups: List[database.Backup]):
         for index, backup in enumerate(backups):
             # self.InsertStringItem(backup.id, backup.date_added.strftime('%d-%m-%Y %H:%M:%S'))
             # self.SetStringItem(backup.id, 1, backup.name)
             # self.SetStringItem(backup.id, 2, backup.description)
-            self.add_backup(index, backup)
+            await self.add_backup(index, backup)
 
-    def add_backup(self, index: int, backup: database.Backup) -> None:
-        self.InsertItem(index, label=backup.date_added)
-        self.SetItem(index, 1, label=backup.name)
-        self.SetItem(index, 2, label=backup.description)
+    async def add_backup(self, index: int, backup: database.Backup) -> None:
+        wx.CallAfter(self.InsertItem, index=index, label=backup.date_added)
+        wx.CallAfter(self.SetItem, index=index, column=1, label=backup.name)
+        wx.CallAfter(self.SetItem, index=index, column=2, label=backup.description)
 
 
 class RestorePanel(wx.Panel):
@@ -98,10 +145,17 @@ class RestorePanel(wx.Panel):
     def __init__(self, *args, **kw):
         super().__init__(*args, **kw)
         self.backups_listpanel = BackupsListPanel(parent=self)
+        self.plylst_listpanel = PlaylistsListPanel(parent=self)
+        self.tracks_listpanel = TracksListPanel(parent=self)
         gbs = wx.GridBagSizer()
         gbs.Add(self.backups_listpanel, pos=(0, 0), flag=wx.EXPAND | wx.ALL)
+        gbs.Add(self.plylst_listpanel, pos=(0, 1), flag=wx.EXPAND | wx.ALL)
+        gbs.Add(self.tracks_listpanel, pos=(1, 0),
+                span=(0, 2), flag=wx.EXPAND | wx.ALL)
         gbs.AddGrowableCol(0, 1)
         gbs.AddGrowableRow(0, 1)
+        gbs.AddGrowableRow(1, 1)
+        gbs.AddGrowableCol(1, 1)
         self.SetSizerAndFit(gbs)
 
 
@@ -125,6 +179,7 @@ class RestoreDialog(wx.Dialog):
     def __init__(self, parent: wx.Window):
         super().__init__(parent=parent, title="Restore Backup",
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
+        self.playlist_manager: playlist_manager.PlaylistManager = wx.GetApp().playlist_manager
         self.main_panel = RestorePanel(parent=self)
         self.button_panel = ButtonPanel(parent=self)
         gs = wx.GridBagSizer()
@@ -137,19 +192,17 @@ class RestoreDialog(wx.Dialog):
         self.CenterOnParent()
 
         self.Bind(wx.EVT_CLOSE, self.on_close)
-        self.Bind(wx.EVT_SHOW, self.on_show)
+        wxasync.AsyncBind(wx.EVT_INIT_DIALOG, self.on_init, self)
+
+    async def on_init(self, evt: wx.CommandEvent):
+        # load the backups
+        backups = await self.playlist_manager.local_db.get_backups()
+        await self.main_panel.backups_listpanel.populate(backups)
 
     def on_close(self, evt: wx.CommandEvent):
         task = RestoreDialog.get_backup_task
         if task is not None and not task.done():
             task.cancel()
-
-    def on_show(self, evt: wx.CommandEvent):
-        # load the backups
-        dlg: RestoreDialog = evt.GetEventObject()
-        if not dlg.IsShown():
-            RestoreDialog.get_backup_task = asyncio.create_task(
-                self.load_backups())
 
     async def load_backups(self):
         # app = wx.GetApp()
@@ -159,8 +212,9 @@ class RestoreDialog(wx.Dialog):
         globals.logger.console("Shown window")
 
 
-def load_dialog(parent: wx.Window):
+async def load_dialog(parent: wx.Window):
     if RestoreDialog.instance is not None and RestoreDialog.instance.IsShown():
         return
     RestoreDialog.instance = RestoreDialog(parent=parent)
-    RestoreDialog.instance.ShowModal()
+    result = await wxasync.AsyncShowDialogModal(RestoreDialog.instance)
+    globals.logger.console(f"Dialog returned {result}")

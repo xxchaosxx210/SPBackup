@@ -59,7 +59,8 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
                 token, app.playlists_backup_handler, "Test", "This is a test purpose entry only"))
 
     def on_restore_click(self, evt: wx.CommandEvent):
-        ui.dialogs.restore.load_dialog(UI.main_frame)
+        asyncio.get_event_loop().create_task(
+            ui.dialogs.restore.load_dialog(UI.main_frame))
 
 
 class PlaylistsToolBar(wx.Panel):
