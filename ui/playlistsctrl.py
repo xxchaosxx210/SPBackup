@@ -11,6 +11,7 @@ from globals.state import (
 )
 from ui.navbuttonpanel import NavButtonPanel
 import ui.dialogs.restore
+from ui.dialogs.create_backup import CreateBackupDialog
 
 
 class PlaylistsNavButtonsPanel(NavButtonPanel):
@@ -54,9 +55,15 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         if not token or task and not (task.done() or task.cancelled()):
             # bad token or task is running ignore the button press
             return
+        create_backup_dialog = CreateBackupDialog(parent=UI.main_frame)
+        if create_backup_dialog.ShowModal() != wx.ID_OK:
+            create_backup_dialog.Destroy()
+            return
+        name, description = create_backup_dialog.get_name_and_description()
+        create_backup_dialog.Destroy()
         app.playlist_manager.running_task = asyncio.create_task(
             app.playlist_manager.backup_playlists(
-                token, app.playlists_backup_handler, "Test", "This is a test purpose entry only"))
+                token, app.playlists_backup_handler, name, description))
 
     def on_restore_click(self, evt: wx.CommandEvent):
         asyncio.get_event_loop().create_task(
