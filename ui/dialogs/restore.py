@@ -2,6 +2,7 @@ from typing import (
     List,
 )
 import asyncio
+import logging
 
 import wx
 import wxasync
@@ -10,6 +11,8 @@ import database
 import globals
 import playlist_manager
 import image_manager
+
+_Log = logging.getLogger()
 
 
 class PaginatePanel(wx.Panel):
@@ -211,13 +214,6 @@ class RestoreDialog(wx.Dialog):
         backups = await self.playlist_manager.local_db.get_backups()
         await self.main_panel.backups_listpanel.populate(backups)
 
-    async def load_backups(self):
-        # app = wx.GetApp()
-        # local_db: database.LocalDatabase = app.playlist_manager.local_db
-        # genfunc = await local_db.iter_backups(0, 1000)
-        # pass
-        globals.logger.console("Shown window")
-
     async def cancel(self):
         task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
         if task is not None and not task.done():
@@ -230,7 +226,6 @@ async def load_dialog(parent: wx.Window):
     RestoreDialog.instance = RestoreDialog(parent=parent)
     result = await wxasync.AsyncShowDialogModal(RestoreDialog.instance)
     if result != wx.ID_OK:
-        globals.logger.console("Cancelled")
         await RestoreDialog.instance.cancel()
         return
-    globals.logger.console("Now restoring the backup please wait...")
+    _Log.info("Now restoring the backup please wait...")

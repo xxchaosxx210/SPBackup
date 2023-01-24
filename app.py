@@ -2,6 +2,7 @@ import wx
 import asyncio
 import multiprocessing
 import argparse
+import logging
 
 from wxasync import WxAsyncApp
 
@@ -36,6 +37,8 @@ from globals.state import (
     UI,
     UserState
 )
+
+_Log = logging.getLogger()
 
 
 class SPBackupApp(WxAsyncApp):
@@ -75,12 +78,10 @@ class SPBackupApp(WxAsyncApp):
         token: str = globals.token.load()["token"]
         UserState.set_token(token)
         if not token:
-            globals.logger.console(
-                "No Token found. Requesting Authorization...", "info")
+            _Log.info("No Token found. Requesting Authorization...")
             self.start_listening_for_redirect()
         else:
-            globals.logger.console(
-                "Token found. Retrieving Playlists from User...", "info")
+            _Log.info("Token found. Retrieving Playlists from User...")
             loop = asyncio.get_event_loop()
             loop.create_task(self.retrieve_user_and_playlists(token))
 
@@ -97,7 +98,7 @@ class SPBackupApp(WxAsyncApp):
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(err)
         except Exception as err:
-            globals.logger.console(err.__str__())
+            _Log.error(err.__str__())
         finally:
             return
 
@@ -208,8 +209,7 @@ class SPBackupApp(WxAsyncApp):
             # save the token to file
             globals.token.save(value)
             UserState.set_token(value)
-            globals.logger.console(
-                "Response from RedirectListener: Token recieved and saved", "info")
+            _Log.info("Response from RedirectListener: Token recieved and saved")
             wx.CallAfter(self.destroy_auth_dialog)
             wx.CallAfter(UI.statusbar.SetStatusText, "Retrieving Playlists...")
             # remember that this function is being called from the local server thread
@@ -227,12 +227,11 @@ class SPBackupApp(WxAsyncApp):
             UserState.set_token(None)
             globals.token.remove()
             wx.CallAfter(self.destroy_auth_dialog)
-            globals.logger.console(value, "error")
+            _Log.error(value)
         elif state == AuthListenerState.EVENT_REQUESTING_AUTHORIZATION:
             # We need a new token. create a new playlist scope and request from Spotify a new Token
             # Prompt user to follow Url
-            globals.logger.console(
-                "Response from RedirectListener: Requesting Authorization...", "info")
+            _Log.info("Response from RedirectListener: Requesting Authorization...")
             loop = asyncio.new_event_loop()
             url = loop.run_until_complete(spotify.net.authorize(
                 globals.config.CLIENT_ID,
@@ -245,13 +244,14 @@ class SPBackupApp(WxAsyncApp):
         # Error handling
         # usually a auth error
         elif state == AuthListenerState.EVENT_SPOTIFY_ERROR:
-            globals.logger.console(
-                f"Response from RedirectListener: Spotify Error {value.response_text}", "error")
+            _Log.error(f"Response from RedirectListener: Spotify Error {value.response_text}")
             wx.CallAfter(UI.statusbar.SetStatusText, value.response_text)
             wx.CallAfter(self.destroy_auth_dialog)
         elif state == AuthListenerState.EVENT_SOCKET_ERROR:
-            error_message = f"Response from RedirectListener: Socket Error, Check the debug.log for more details. {value.__str__()}"
-            globals.logger.console(error_message, "error")
+            error_message = \
+                f"Response from RedirectListener: Socket Error, \
+                    Check the debug.log for more details. {value.__str__()}"
+            _Log.error(error_message)
             wx.CallAfter(UI.statusbar.SetStatusText, error_message)
             wx.CallAfter(self.destroy_auth_dialog)
 
@@ -306,20 +306,17 @@ class SPBackupApp(WxAsyncApp):
         elif event == BET.PLAYLIST_ADDED:
             wx.CallAfter(
                 ui.dialogs.loading.update_loading_dialog,
-                    dialog=UI.progress_dialog, 
-                    line=f'[Playlist]: {data["item"].name}')
+                dialog=UI.progress_dialog,
+                line=f'[Playlist]: {data["item"].name}')
         elif event == BET.TRACK_ADDED:
             if data["item"].track is None:
                 pass
-            globals.logger.console(
-                f'New Track added {data["item"].track_name}')
+            _Log.info(f'New Track added {data["item"].track_name}')
         elif event == BET.BACKUP_ERROR:
             wx.CallAfter(ui.dialogs.error.show_dialog,
-            parent=UI.main_frame, title="Backup Error", message=\
-                data["error"].__str__())
+                         parent=UI.main_frame, title="Backup Error", message=data["error"].__str__())
         elif event == BET.MAX_LIMIT_RATE_REACHED_RETRY:
-            globals.logger.console(
-                f'Maximum limit reached. Trying again in {data["delay"]} seconds...', "warning")
+            _Log.warning(f'Maximum limit reached. Trying again in {data["delay"]} seconds...')
         elif event == BET.BACKUP_SUCCESS:
             wx.CallAfter(UI.progress_dialog.complete)
         elif event == BET.BACKUP_START:
@@ -331,7 +328,7 @@ class SPBackupApp(WxAsyncApp):
                 parent=UI.main_frame,
                 dialog=UI.progress_dialog,
                 callback=_callback_dialog,
-                range=data["playlists_info"].total, 
+                range=data["playlists_info"].total,
                 title="Backing up. This may take minutes to hours depending on your playlist library size...",
                 tasks=data["tasks"])
 

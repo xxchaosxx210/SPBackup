@@ -1,5 +1,6 @@
 import wx
 import asyncio
+import logging
 
 from ui.playlist_splitterwindow import PlaylistSplitterWindow
 from ui.tracksctrl import PlaylistToolbar
@@ -10,12 +11,14 @@ from ui.dialogs.loading import LoadingDialog
 from globals.state import UI
 from globals.state import SpotifyState
 from globals.state import UserState
-import globals.logger
 
 from spotify.validators.playlist import Playlist
 import spotify.net
 
 import image_manager
+
+
+_Log = logging.getLogger()
 
 
 class MainFrame(wx.Frame):
@@ -31,13 +34,12 @@ class MainFrame(wx.Frame):
         self.create_menubar()
 
         hbox = wx.BoxSizer(wx.HORIZONTAL)
-        hbox.Add(self.main_panel, 1, wx.ALL|wx.EXPAND, 0)
+        hbox.Add(self.main_panel, 1, wx.ALL | wx.EXPAND, 0)
         vbox = wx.BoxSizer(wx.VERTICAL)
-        vbox.Add(hbox, 1, wx.ALL|wx.EXPAND, 0)
+        vbox.Add(hbox, 1, wx.ALL | wx.EXPAND, 0)
 
         self.SetSizerAndFit(vbox)
         self.SetSize((600, 600))
-
 
     def create_menubar(self):
         """Creates the menu bar."""
@@ -47,12 +49,12 @@ class MainFrame(wx.Frame):
         # Create a User menu
         self.user_menu = wx.Menu()
         self.details_item = wx.MenuItem(self.user_menu, wx.ID_ANY, "Details")
-        self.reauth_item = wx.MenuItem(self.user_menu, wx.ID_ANY, "Re-authorize")
+        self.reauth_item = wx.MenuItem(
+            self.user_menu, wx.ID_ANY, "Re-authorize")
         self.Bind(wx.EVT_MENU, self.on_user_details, self.details_item)
         self.Bind(wx.EVT_MENU, self.on_reauthenticate, self.reauth_item)
         self.user_menu.Append(self.details_item)
         self.user_menu.Append(self.reauth_item)
-
 
         # View Menu creation
         self.view_menu = wx.Menu()
@@ -69,8 +71,10 @@ class MainFrame(wx.Frame):
 
         # Debug menu creation
         self.debug_menu = wx.Menu()
-        self.all_tracks = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Get All Tracks")
-        show_loading_dlg = wx.MenuItem(self.debug_menu, wx.ID_ANY, "Show Loading Dialog")
+        self.all_tracks = wx.MenuItem(
+            self.debug_menu, wx.ID_ANY, "Get All Tracks")
+        show_loading_dlg = wx.MenuItem(
+            self.debug_menu, wx.ID_ANY, "Show Loading Dialog")
         self.Bind(wx.EVT_MENU, self.on_show_loading_dlg, show_loading_dlg)
         self.Bind(wx.EVT_MENU, self.on_get_all_tracks_menuitem, self.all_tracks)
         self.debug_menu.Append(self.all_tracks)
@@ -90,7 +94,7 @@ class MainFrame(wx.Frame):
 
         # Set the frame's menu bar
         self.SetMenuBar(self.menu_bar)
-    
+
     def on_get_all_playlists(self, *args):
         """debug menu - get all the playlists belonging to the user
         """
@@ -109,25 +113,26 @@ class MainFrame(wx.Frame):
             return
         # get the playlist information to display to the console
         playlist: Playlist = SpotifyState.get_playlists().items[index]
-        globals.logger.console(f"Retrieving tracks from playlist {playlist.name}...")
+        _Log.info(f"Retrieving tracks from playlist {playlist.name}...")
         # get the generator and iterate through
-        current_task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
+        current_task: asyncio.Task = asyncio.current_task(
+            asyncio.get_event_loop())
         dlg = LoadingDialog(
-                            self, 
-                            playlist.tracks.total, 
-                            "Loading all tracks...",
-                            [current_task])
+            self,
+            playlist.tracks.total,
+            "Loading all tracks...",
+            [current_task])
         dlg.Show(True)
         async for item in spotify.net.get_all_track_items(
-            UserState.get_token(), playlist.id):
+                UserState.get_token(), playlist.id):
             try:
                 dlg.update_progress()
                 dlg.append_text(text=f"Loaded {item.track.name}.")
             except (AttributeError, TypeError) as err:
-                globals.logger.console(
-                    f"Error updating the progress of all tracks. {err.__str__()}", "error")
+                _Log.error(
+                    f"Error updating the progress of all tracks. {err.__str__()}")
         dlg.complete()
-    
+
     def on_show_loading_dlg(self, evt: wx.CommandEvent):
         """debug menu - show a loading dialog for testing purposes
 
@@ -138,8 +143,8 @@ class MainFrame(wx.Frame):
         if dlg.ShowModalWithText("Connecting from the debug menu...") == wx.ID_CANCEL:
             # close running threads here
             pass
-        dlg.Destroy()    
-    
+        dlg.Destroy()
+
     def on_about_menu(self, evt: wx.CommandEvent):
         dlg = BubbleDialog(self, -1, "SPBackup", [
             "Spotify Backup", "Coded by Paul Millar", "Beta tested by Conor Moore",
@@ -155,7 +160,7 @@ class MainFrame(wx.Frame):
     def on_reauthenticate(self, event: wx.CommandEvent):
         """Event handler for the Re-authorize menu item."""
         wx.GetApp().reauthenticate()
-    
+
     def toggle_hide_playlists(self, evt: wx.CommandEvent):
         """toggles the hide and show functions in the splitterwindow
 
@@ -173,9 +178,10 @@ class MainFrame(wx.Frame):
             UI.playlists_spw.Unsplit(UI.playlists_ctrl)
             UI.playlists_ctrl.Disable()
         else:
-            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.tracksctrl)
+            UI.playlists_spw.SplitHorizontally(
+                UI.playlists_ctrl, UI.tracksctrl)
             UI.playlists_ctrl.Enable()
-    
+
     def toggle_hide_tracks(self, evt: wx.CommandEvent):
         """toggles the hide and show functions in the splitterwindow
 
@@ -191,7 +197,8 @@ class MainFrame(wx.Frame):
         if menu.IsChecked(self.hide_tracks_menuitem.GetId()):
             UI.playlists_spw.Unsplit(UI.tracksctrl)
         else:
-            UI.playlists_spw.SplitHorizontally(UI.playlists_ctrl, UI.tracksctrl)
+            UI.playlists_spw.SplitHorizontally(
+                UI.playlists_ctrl, UI.tracksctrl)
 
 
 class MainPanel(wx.Panel):
@@ -205,5 +212,5 @@ class MainPanel(wx.Panel):
         vbox = wx.BoxSizer(wx.VERTICAL)
         vbox.Add(UI.playlists_toolbar, 0, wx.EXPAND, 0)
         vbox.Add(UI.playlists_spw, 1, wx.EXPAND, 0)
-        vbox.Add(UI.playlistinfo_toolbar, 0, wx.EXPAND|wx.ALL, 0)
+        vbox.Add(UI.playlistinfo_toolbar, 0, wx.EXPAND | wx.ALL, 0)
         self.SetSizer(vbox)

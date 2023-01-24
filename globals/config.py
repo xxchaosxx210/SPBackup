@@ -1,4 +1,5 @@
 import os
+import logging
 
 # Global App data
 
@@ -19,20 +20,22 @@ APP_SETTINGS_DIR = os.path.join(APP_DATA_DIR, APP_NAME)
 USER_DATABASE_FILENAME = "backups.db"
 USERS_FULL_PATHNAME = os.path.join(APP_SETTINGS_DIR, "users")
 
+
+_Log = logging.getLogger()
+
+
 def create_data_path():
-    from globals.logger import console
-    console(f'Checking for {APP_SETTINGS_DIR}')
+    _Log.info(f'Checking for {APP_SETTINGS_DIR}')
     try:
         os.makedirs(APP_SETTINGS_DIR)
-        console(f'{APP_SETTINGS_DIR} has been created')
+        _Log.info(f'{APP_SETTINGS_DIR} has been created')
     except OSError:
-        console(f"{APP_SETTINGS_DIR} already exists")
+        _Log.info(f"{APP_SETTINGS_DIR} already exists")
 
 def create_users_path():
-    from globals.logger import console
-    console(f'Checking for {USERS_FULL_PATHNAME}')
+    _Log.info(f'Checking for {USERS_FULL_PATHNAME}')
     try:
         os.makedirs(USERS_FULL_PATHNAME)
-        console(f'{USERS_FULL_PATHNAME} has been created')
+        _Log.info(f'{USERS_FULL_PATHNAME} has been created')
     except OSError:
-        console(f"{USERS_FULL_PATHNAME} already exists")
+        _Log.info(f"{USERS_FULL_PATHNAME} already exists")

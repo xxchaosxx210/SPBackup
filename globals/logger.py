@@ -1,10 +1,10 @@
 import logging
 
-STREAM_LOGGER_NAME = "SPBackupStream"
+# STREAM_LOGGER_NAME = "SPBackupStream"
 LOGGER_LEVEL = logging.INFO
 
 def setup_logger() -> logging.Logger:
-    logger = logging.getLogger(STREAM_LOGGER_NAME)
+    logger = logging.getLogger()
     logger.setLevel(LOGGER_LEVEL)
 
     # create a console handler
@@ -18,14 +18,3 @@ def setup_logger() -> logging.Logger:
     logger.addHandler(console_handler)
 
     return logger
-
-def console(message: str, level: str = "info"):
-    logger = logging.getLogger(STREAM_LOGGER_NAME)
-    if level == "info":
-        logger.info(message)
-    elif level == "debug":
-        logger.debug(message)
-    elif level == "warning":
-        logger.warning(message)
-    else:
-        logger.error(message)
