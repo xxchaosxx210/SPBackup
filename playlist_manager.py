@@ -141,32 +141,28 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
     return decorator
 
 
-async def create_user_backup_dir(user: SpotifyUser) -> None:
-    """creates a folder named after the UserID if doesnt exist
-        then it creates a sqlite database if one doesnt exist. Then it
-        adds a table named user with the user details
+async def get_database_from_username(user_name: str, error_handler: callable) -> LocalDatabase:
+    """appends a new user dir string from the user name. Tries to create a new user directory
+    a new user database file if one doesnt exist and tables and returns the database object
 
-        Args:
-            path (str): the exact path of the apps settings
+    Args:
+        user_name (str): the user ID from the spotify api
+        error_handler (callable): any errors then LocalDatabase will pass back to
 
-        Returns:
-            str: returns the pathname to where the database was created
+    Returns:
+        LocalDatabase: the database.LocalBase object
     """
-    user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
-    if user is None:
-        raise TypeError("User in create_backup_directory does not exist")
-    self.user = user
+    user_path = os.path.join(PLAYLIST_DIR, f'{user_name}')
     try:
         os.makedirs(user_path, exist_ok=False)
-        spotify.debugging.file_log(
-            f"Could not find playlist user path creating a new one... {user_path}", "info")
     except OSError:
         # path already exists
         pass
     finally:
         db_path = os.path.join(user_path, DATABASE_FILENAME)
-        self.local_db = LocalDatabase(db_path, self.on_database_error)
-        return db_path
+        local_db = LocalDatabase(db_path, error_handler=error_handler)
+        return local_db
+
 
 class PlaylistManager:
 
@@ -368,7 +364,7 @@ class PlaylistManager:
             "value": value,
             "exception": exception})
 
-    async def create_backup_directory(self, user: SpotifyUser) -> str:
+    async def create_backup_directory(self, user: SpotifyUser) -> None:
         """creates a folder named after the UserID if doesnt exist
         then it creates a sqlite database if one doesnt exist. Then it
         adds a table named user with the user details
@@ -379,18 +375,19 @@ class PlaylistManager:
         Returns:
             str: returns the pathname to where the database was created
         """
-        user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
-        if user is None:
-            raise TypeError("User in create_backup_directory does not exist")
-        self.user = user
-        try:
-            os.makedirs(user_path, exist_ok=False)
-            spotify.debugging.file_log(
-                f"Could not find playlist user path creating a new one... {user_path}", "info")
-        except OSError:
-            # path already exists
-            pass
-        finally:
-            db_path = os.path.join(user_path, DATABASE_FILENAME)
-            self.local_db = LocalDatabase(db_path, self.on_database_error)
-            return db_path
+        self.local_db = await get_database_from_username(user.id, self.on_database_error)
+        # user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
+        # if user is None:
+        #     raise TypeError("User in create_backup_directory does not exist")
+        # self.user = user
+        # try:
+        #     os.makedirs(user_path, exist_ok=False)
+        #     spotify.debugging.file_log(
+        #         f"Could not find playlist user path creating a new one... {user_path}", "info")
+        # except OSError:
+        #     # path already exists
+        #     pass
+        # finally:
+        #     db_path = os.path.join(user_path, DATABASE_FILENAME)
+        #     self.local_db = LocalDatabase(db_path, self.on_database_error)
+        #     return db_path
