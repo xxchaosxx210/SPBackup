@@ -8,9 +8,9 @@ import wx
 import wxasync
 
 import database
-import globals
-import playlist_manager
 import image_manager
+
+from ui.dialogs.error import ErrorDialog
 
 _Log = logging.getLogger()
 
@@ -190,9 +190,9 @@ class ButtonPanel(wx.Panel):
 class RestoreDialog(wx.Dialog):
 
     instance: wx.Dialog = None
-    ply_mgr: playlist_manager.PlaylistManager = None
 
-    def __init__(self, parent: wx.Window):
+    def __init__(self, parent: wx.Window, user_id: str):
+        self.user_id: str = user_id
         super().__init__(parent=parent, title="Restore Backup",
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
         self.main_panel = RestorePanel(parent=self)
@@ -211,7 +211,9 @@ class RestoreDialog(wx.Dialog):
     async def on_init(self, evt: wx.CommandEvent):
         # load the playlist manager
         # load the backups
-        backups = await self.playlist_manager.local_db.get_backups()
+        self.local_db: database.LocalDatabase = await database.get_database_from_username(
+            user_name=self.user_id, error_handler=self.on_database_error)
+        backups = await self.local_db.get_backups()
         await self.main_panel.backups_listpanel.populate(backups)
 
     async def cancel(self):
@@ -219,11 +221,16 @@ class RestoreDialog(wx.Dialog):
         if task is not None and not task.done():
             await task.cancel()
 
+    async def on_database_error(self, type, value, exception):
+        error_dlg = ErrorDialog(self.GetParent(), "SQLite Error", exception.__str__())
+        error_dlg.ShowModal()
+        error_dlg.Destroy()
 
-async def load_dialog(parent: wx.Window):
+
+async def load_dialog(parent: wx.Window, user_id: str):
     if RestoreDialog.instance is not None and RestoreDialog.instance.IsShown():
         return
-    RestoreDialog.instance = RestoreDialog(parent=parent)
+    RestoreDialog.instance = RestoreDialog(parent=parent, user_id=user_id)
     result = await wxasync.AsyncShowDialogModal(RestoreDialog.instance)
     if result != wx.ID_OK:
         await RestoreDialog.instance.cancel()
