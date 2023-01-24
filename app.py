@@ -351,11 +351,6 @@ async def run_app():
 
     # logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
 
-    spotify.debugging.DEBUG = add_args()
-    if spotify.debugging.DEBUG:
-        # setup our spotify debugging if arguments are set to true
-        spotify.debugging.initialize()
-
     # create our logger APP
     globals.logger.setup_logger()
 
@@ -365,6 +360,8 @@ async def run_app():
         parent=None,
         title=f"{globals.config.APP_NAME} v{globals.config.APP_VERSION} - coded by {globals.config.APP_AUTHOR}")
     UI.main_frame.Show()
+    globals.config.create_data_path()
+    globals.config.create_users_path()
     app.run_background_auth_check()
     await app.MainLoop()
 

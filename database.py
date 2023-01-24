@@ -1,4 +1,5 @@
 import enum
+import os
 from datetime import datetime
 from typing import (
     List,
@@ -6,9 +7,10 @@ from typing import (
 
 import aiosqlite
 
-from spotify.validators.user import User as SpotifyUser
 from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.playlists import Item as PlaylistItem
+
+import globals.config
 
 
 class DatabaseEvent(enum.Enum):
@@ -119,7 +121,7 @@ class LocalDatabase:
             rows = await cursor.fetchall()
             backups = list(map(lambda row: Backup(*row), rows))
             return backups
-    
+
     async def iter_backups(self, offset: int = 0, limit: int = 100):
         async with BackupSQlite(self.path, self.error_handler) as cursor:
             await cursor.execute(f'SELECT * from Backups LIMIT {limit} OFFSET {offset}')
@@ -238,3 +240,26 @@ class LocalDatabase:
             name TEXT
         );
         ''')
+
+
+async def get_database_from_username(user_name: str, error_handler: callable) -> LocalDatabase:
+    """appends a new user dir string from the user name. Tries to create a new user directory
+    a new user database file if one doesnt exist and tables and returns the database object
+
+    Args:
+        user_name (str): the user ID from the spotify api
+        error_handler (callable): any errors then LocalDatabase will pass back to
+
+    Returns:
+        LocalDatabase: the database.LocalBase object
+    """
+    user_path = os.path.join(globals.config.USERS_FULL_PATHNAME, f'{user_name}')
+    try:
+        os.makedirs(user_path, exist_ok=False)
+    except OSError:
+        # path already exists
+        pass
+    finally:
+        db_path = os.path.join(user_path, globals.config.USER_DATABASE_FILENAME)
+        local_db = LocalDatabase(db_path, error_handler=error_handler)
+        return local_db

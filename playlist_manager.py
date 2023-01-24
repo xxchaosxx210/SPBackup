@@ -3,7 +3,6 @@ playlist_manager.py - handles the users playlists and backs up and restores them
 and json
 """
 
-import os
 import asyncio
 from enum import (
     Enum,
@@ -16,7 +15,6 @@ from typing import (
     List
 )
 
-import spotify.debugging
 import spotify.net
 import spotify.constants
 from spotify.validators.user import User as SpotifyUser
@@ -24,47 +22,7 @@ from spotify.validators.playlists import Item as PlaylistItem
 from spotify.validators.playlists import Playlists
 from spotify.validators.tracks import Tracks
 
-from database import LocalDatabase
-
-PLAYLIST_PATHNAME = "user_backups"
-# backed up playlists
-DATABASE_FILENAME = "playlists.db"
-PLAYLIST_DIR: str = ""
-
-"""
-@dataclass
-class Backups:
-    id: int
-    name: str
-    description: str
-    date_added: int
-
-@dataclass
-Playlist:
-    id: int
-    backups_id: int     #foreign key
-    name: str
-    description: str
-
-@dataclass
-Track
-    id: int
-    playlist_id: int    #foreign key
-    artists_id: int     #foreign key
-    album_id: int       #foreign key
-    uri: str
-    name: str
-
-@dataclass
-Artists:
-    id: int
-    name: str
-
-@dataclass
-Album:
-    id: int
-    name: str
-"""
+import database
 
 
 class BackupEventType(Enum):
@@ -141,29 +99,6 @@ def retry_on_limit_exceeded(delay: int, timeout_factor: float):
     return decorator
 
 
-async def get_database_from_username(user_name: str, error_handler: callable) -> LocalDatabase:
-    """appends a new user dir string from the user name. Tries to create a new user directory
-    a new user database file if one doesnt exist and tables and returns the database object
-
-    Args:
-        user_name (str): the user ID from the spotify api
-        error_handler (callable): any errors then LocalDatabase will pass back to
-
-    Returns:
-        LocalDatabase: the database.LocalBase object
-    """
-    user_path = os.path.join(PLAYLIST_DIR, f'{user_name}')
-    try:
-        os.makedirs(user_path, exist_ok=False)
-    except OSError:
-        # path already exists
-        pass
-    finally:
-        db_path = os.path.join(user_path, DATABASE_FILENAME)
-        local_db = LocalDatabase(db_path, error_handler=error_handler)
-        return local_db
-
-
 class PlaylistManager:
 
     running_task: asyncio.Task = None
@@ -171,11 +106,8 @@ class PlaylistManager:
 
     def __init__(self) -> None:
         # settings ans setting up the database tables
-        global PLAYLIST_DIR
         self.user: SpotifyUser = None
-        self.local_db: LocalDatabase = None
-        PLAYLIST_DIR = os.path.join(
-            spotify.debugging.APP_SETTINGS_DIR, PLAYLIST_PATHNAME)
+        self.local_db: database.LocalDatabase = None
         # main callback handler
         PlaylistManager.backup_callback: BACKUP_CALLBACK_TYPE = None
         self.token: str = ""
@@ -211,7 +143,6 @@ class PlaylistManager:
             self.token = token
             # create the database tables if none exist
             await self.local_db.create_tables()
-            backups = await self.local_db.get_backups()
             # insert the backup table here
             backup_pk: int = await self.local_db.add_backup(
                 name=backup_name, description=backup_description)
@@ -375,19 +306,5 @@ class PlaylistManager:
         Returns:
             str: returns the pathname to where the database was created
         """
-        self.local_db = await get_database_from_username(user.id, self.on_database_error)
-        # user_path = os.path.join(PLAYLIST_DIR, f'{user.id}')
-        # if user is None:
-        #     raise TypeError("User in create_backup_directory does not exist")
-        # self.user = user
-        # try:
-        #     os.makedirs(user_path, exist_ok=False)
-        #     spotify.debugging.file_log(
-        #         f"Could not find playlist user path creating a new one... {user_path}", "info")
-        # except OSError:
-        #     # path already exists
-        #     pass
-        # finally:
-        #     db_path = os.path.join(user_path, DATABASE_FILENAME)
-        #     self.local_db = LocalDatabase(db_path, self.on_database_error)
-        #     return db_path
+        self.local_db = await database.get_database_from_username(
+            user.id, self.on_database_error)

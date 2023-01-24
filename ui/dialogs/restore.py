@@ -120,7 +120,7 @@ class TracksListPanel(PaginatePanel):
                 "width": 100
             }
         ]
-        super().__init__("Songs", columns, *args, **kw)
+        super().__init__("Songs", columns, limit=100, *args, **kw)
 
 
 class BackupsListCtrl(wx.ListCtrl):
