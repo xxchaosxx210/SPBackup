@@ -4,7 +4,6 @@ import urllib.parse
 from typing import Callable
 
 import spotify.net
-from spotify import debugging
 
 from enum import(
   Enum,
@@ -117,7 +116,6 @@ class RedirectListener(threading.Thread):
                         if not query.get("code", None) or len(query["code"]) < 1:
                             # there is an issue could not find code as first element
                             _error_message = f"Error: could not find Authorize Code in HTTP response... {http_response}"
-                            debugging.file_log(_error_message, "error")
                             self.callback(
                                 AuthListenerState.EVENT_AUTHORIZATION_ERROR,
                                 _error_message,
@@ -146,10 +144,6 @@ class RedirectListener(threading.Thread):
                             self.stop_event.set()
                 except socket.error as err:
                     # Should be a network issue
-                    debugging.file_log(
-                        f"Error in RedirectListener reading from socket. {err.__str__()}",
-                        "error",
-                    )
                     self.callback(AuthListenerState.EVENT_SOCKET_ERROR, err)
 
     def send_response(self, conn: socket.socket, html: str):
