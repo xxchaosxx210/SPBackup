@@ -11,10 +11,14 @@ import globals
 import playlist_manager
 import image_manager
 
+
 class PaginatePanel(wx.Panel):
 
-    def __init__(self, title: str, columns: List[dict], *args, **kw):
+    def __init__(self, title: str, columns: List[dict], limit: int, *args, **kw):
         super().__init__(*args, **kw)
+
+        self.offset = 0
+        self.limit = limit
 
         staticbox = wx.StaticBox(self, label=title)
         static_sizer = wx.StaticBoxSizer(staticbox, wx.VERTICAL)
@@ -22,8 +26,10 @@ class PaginatePanel(wx.Panel):
         self.listctrl = wx.ListCtrl(self, style=wx.LC_REPORT)
         self.create_columns(columns)
 
-        self.prev_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("previous.png"))
-        self.next_button = wx.BitmapButton(self, wx.ID_ANY, image_manager.load_image("next.png"))
+        self.prev_button = wx.BitmapButton(
+            self, wx.ID_ANY, image_manager.load_image("previous.png"))
+        self.next_button = wx.BitmapButton(
+            self, wx.ID_ANY, image_manager.load_image("next.png"))
 
         button_sizer = wx.BoxSizer(wx.HORIZONTAL)
         button_sizer.Add(self.prev_button, proportion=0)
@@ -40,6 +46,9 @@ class PaginatePanel(wx.Panel):
                 index, column["label"], width=column["width"])
 
     def populate(self, objects: List[any]):
+        pass
+
+    async def get_next_list(self) -> List[any]:
         pass
 
 
@@ -60,7 +69,7 @@ class BackupsListPanel(PaginatePanel):
                 "width": 200
             }
         ]
-        super().__init__(title="Backups", columns=columns, *args, **kw)
+        super().__init__(title="Backups", columns=columns, limit=100, *args, **kw)
 
     async def populate(self, backups: List[database.Backup]):
         for index, backup in enumerate(backups):
@@ -70,9 +79,12 @@ class BackupsListPanel(PaginatePanel):
             await self.add_backup(index, backup)
 
     async def add_backup(self, index: int, backup: database.Backup) -> None:
-        wx.CallAfter(self.listctrl.InsertItem, index=index, label=backup.date_added)
-        wx.CallAfter(self.listctrl.SetItem, index=index, column=1, label=backup.name)
-        wx.CallAfter(self.listctrl.SetItem, index=index, column=2, label=backup.description)
+        wx.CallAfter(self.listctrl.InsertItem,
+                     index=index, label=backup.date_added)
+        wx.CallAfter(self.listctrl.SetItem, index=index,
+                     column=1, label=backup.name)
+        wx.CallAfter(self.listctrl.SetItem, index=index,
+                     column=2, label=backup.description)
 
 
 class PlaylistsListPanel(PaginatePanel):
@@ -88,7 +100,7 @@ class PlaylistsListPanel(PaginatePanel):
                 "width": 300
             }
         ]
-        super().__init__("Playlists", columns, *args, **kw)
+        super().__init__("Playlists", columns, limit=100, *args, **kw)
 
 
 class TracksListPanel(PaginatePanel):
@@ -137,7 +149,8 @@ class BackupsListCtrl(wx.ListCtrl):
     async def add_backup(self, index: int, backup: database.Backup) -> None:
         wx.CallAfter(self.InsertItem, index=index, label=backup.date_added)
         wx.CallAfter(self.SetItem, index=index, column=1, label=backup.name)
-        wx.CallAfter(self.SetItem, index=index, column=2, label=backup.description)
+        wx.CallAfter(self.SetItem, index=index,
+                     column=2, label=backup.description)
 
 
 class RestorePanel(wx.Panel):
@@ -173,13 +186,12 @@ class ButtonPanel(wx.Panel):
 
 class RestoreDialog(wx.Dialog):
 
-    get_backup_task: asyncio.Task = None
     instance: wx.Dialog = None
+    ply_mgr: playlist_manager.PlaylistManager = None
 
     def __init__(self, parent: wx.Window):
         super().__init__(parent=parent, title="Restore Backup",
                          style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER)
-        self.playlist_manager: playlist_manager.PlaylistManager = wx.GetApp().playlist_manager
         self.main_panel = RestorePanel(parent=self)
         self.button_panel = ButtonPanel(parent=self)
         gs = wx.GridBagSizer()
@@ -191,18 +203,13 @@ class RestoreDialog(wx.Dialog):
         self.SetSize((800, 600))
         self.CenterOnParent()
 
-        self.Bind(wx.EVT_CLOSE, self.on_close)
         wxasync.AsyncBind(wx.EVT_INIT_DIALOG, self.on_init, self)
 
     async def on_init(self, evt: wx.CommandEvent):
+        # load the playlist manager
         # load the backups
         backups = await self.playlist_manager.local_db.get_backups()
         await self.main_panel.backups_listpanel.populate(backups)
-
-    def on_close(self, evt: wx.CommandEvent):
-        task = RestoreDialog.get_backup_task
-        if task is not None and not task.done():
-            task.cancel()
 
     async def load_backups(self):
         # app = wx.GetApp()
@@ -211,10 +218,19 @@ class RestoreDialog(wx.Dialog):
         # pass
         globals.logger.console("Shown window")
 
+    async def cancel(self):
+        task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
+        if task is not None and not task.done():
+            await task.cancel()
+
 
 async def load_dialog(parent: wx.Window):
     if RestoreDialog.instance is not None and RestoreDialog.instance.IsShown():
         return
     RestoreDialog.instance = RestoreDialog(parent=parent)
     result = await wxasync.AsyncShowDialogModal(RestoreDialog.instance)
-    globals.logger.console(f"Dialog returned {result}")
+    if result != wx.ID_OK:
+        globals.logger.console("Cancelled")
+        await RestoreDialog.instance.cancel()
+        return
+    globals.logger.console("Now restoring the backup please wait...")
