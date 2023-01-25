@@ -135,7 +135,15 @@ class LocalDatabase:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
             await cursor.execute(f'SELECT * from Playlists WHERE backup_id={backup_pk}')
             playlists = await cursor.fetchall()
+            # map tuple to Python Class
+            playlists = list(map(lambda plylst: Playlist(*plylst), playlists))
             return playlists
+
+    async def iter_playlists(self, backup_pk: int, offset: int, limit: int) -> Playlist:
+        async with BackupSQlite(self.path, self.error_handler) as cursor:
+            await cursor.execute(f'SELECT * from Playlists WHERE backup_id={backup_pk}')
+            async for row in cursor:
+                yield Playlist(*row)
 
     async def get_backup_from_date_added(self, date_added: str) -> tuple:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
@@ -266,7 +274,8 @@ async def get_database_from_username(user_name: str, error_handler: callable) ->
         _Log.info(f'Path with User ID#{user_name} has already been created')
         pass
     finally:
-        db_path = os.path.join(user_path, globals.config.USER_DATABASE_FILENAME)
+        db_path = os.path.join(
+            user_path, globals.config.USER_DATABASE_FILENAME)
         local_db = LocalDatabase(db_path, error_handler=error_handler)
         _Log.info(f'Connected to local database Path: {local_db.path}')
         _Log.info(f'Creating Tables in database...')

@@ -31,7 +31,6 @@ class UI:
     playlists_spw: wx.SplitterWindow = None
     statusbar: wx.StatusBar = None
     progress_dialog: LoadingDialog = None
-    restore_dialog: RestoreDialog = None
 
 
 class Global:
