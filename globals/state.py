@@ -10,6 +10,7 @@ import wx
 from spotify.validators.playlist import Playlist
 from spotify.validators.playlist import Tracks as PlaylistTracks
 from spotify.validators.playlists import Playlists
+from spotify.validators.user import User as SpotifyUser
 
 from ui.dialogs.loading import LoadingDialog
 from ui.dialogs.restore import RestoreDialog
@@ -53,6 +54,7 @@ class UserState(Global):
     """
 
     __token: str = None
+    __user: SpotifyUser = None
 
     @staticmethod
     def set_token(token: str):
@@ -63,6 +65,16 @@ class UserState(Global):
     def get_token() -> str:
         with Global.get_lock():
             return UserState.__token
+
+    @staticmethod
+    def set_user(user: SpotifyUser):
+        with Global.get_lock():
+            UserState.__user = user
+    
+    @staticmethod
+    def get_user() -> SpotifyUser:
+        with Global.get_lock():
+            return UserState.__user
 
 
 class SpotifyState(Global):

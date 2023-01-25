@@ -4,6 +4,7 @@ import asyncio
 import wx.lib.mixins.listctrl as listmix
 
 from spotify.validators.playlists import Item as PlaylistsItem
+from spotify.validators.user import User as SpotifyUser
 from globals.state import (
     SpotifyState,
     UI,
@@ -55,10 +56,12 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
         if not token or task and not (task.done() or task.cancelled()):
             # bad token or task is running ignore the button press
             return
+        # show the backup namd and description add dialog box before launching the Backup process
         create_backup_dialog = CreateBackupDialog(parent=UI.main_frame)
         if create_backup_dialog.ShowModal() != wx.ID_OK:
             create_backup_dialog.Destroy()
             return
+        # get the entered name and description (doesnt matter if empty)
         name, description = create_backup_dialog.get_name_and_description()
         create_backup_dialog.Destroy()
         app.playlist_manager.running_task = asyncio.create_task(
@@ -66,8 +69,9 @@ class PlaylistsNavButtonsPanel(NavButtonPanel):
                 token, app.playlists_backup_handler, name, description))
 
     def on_restore_click(self, evt: wx.CommandEvent):
+        user: SpotifyUser = UserState.get_user()
         asyncio.get_event_loop().create_task(
-            ui.dialogs.restore.load_dialog(UI.main_frame))
+            ui.dialogs.restore.load_dialog(parent=UI.main_frame, user_id=user.id))
 
 
 class PlaylistsToolBar(wx.Panel):

@@ -1,5 +1,6 @@
 import enum
 import os
+import logging
 from datetime import datetime
 from typing import (
     List,
@@ -11,6 +12,8 @@ from spotify.validators.tracks import Item as TrackItem
 from spotify.validators.playlists import Item as PlaylistItem
 
 import globals.config
+
+_Log = logging.getLogger()
 
 
 class DatabaseEvent(enum.Enum):
@@ -253,13 +256,19 @@ async def get_database_from_username(user_name: str, error_handler: callable) ->
     Returns:
         LocalDatabase: the database.LocalBase object
     """
-    user_path = os.path.join(globals.config.USERS_FULL_PATHNAME, f'{user_name}')
+    user_path = os.path.join(
+        globals.config.USERS_FULL_PATHNAME, f'{user_name}')
     try:
         os.makedirs(user_path, exist_ok=False)
+        _Log.info(f'Path with User ID#{user_name} has been created')
     except OSError:
         # path already exists
+        _Log.info(f'Path with User ID#{user_name} has already been created')
         pass
     finally:
         db_path = os.path.join(user_path, globals.config.USER_DATABASE_FILENAME)
         local_db = LocalDatabase(db_path, error_handler=error_handler)
+        _Log.info(f'Connected to local database Path: {local_db.path}')
+        _Log.info(f'Creating Tables in database...')
+        await local_db.create_tables()
         return local_db

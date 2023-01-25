@@ -216,13 +216,14 @@ class RestoreDialog(wx.Dialog):
         backups = await self.local_db.get_backups()
         await self.main_panel.backups_listpanel.populate(backups)
 
-    async def cancel(self):
+    def cancel(self):
         task: asyncio.Task = asyncio.current_task(asyncio.get_event_loop())
         if task is not None and not task.done():
-            await task.cancel()
+            task.cancel()
 
     async def on_database_error(self, type, value, exception):
-        error_dlg = ErrorDialog(self.GetParent(), "SQLite Error", exception.__str__())
+        error_dlg = ErrorDialog(
+            self.GetParent(), "SQLite Error", exception.__str__())
         error_dlg.ShowModal()
         error_dlg.Destroy()
 
@@ -233,6 +234,6 @@ async def load_dialog(parent: wx.Window, user_id: str):
     RestoreDialog.instance = RestoreDialog(parent=parent, user_id=user_id)
     result = await wxasync.AsyncShowDialogModal(RestoreDialog.instance)
     if result != wx.ID_OK:
-        await RestoreDialog.instance.cancel()
+        RestoreDialog.instance.cancel()
         return
     _Log.info("Now restoring the backup please wait...")

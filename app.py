@@ -94,6 +94,7 @@ class SPBackupApp(WxAsyncApp):
         try:
             await self.retrieve_playlists(token)
             user = await spotify.net.get_user_info(token)
+            UserState.set_user(user)
             await self.playlist_manager.create_backup_directory(user)
         except spotify.net.SpotifyError as err:
             self.handle_spotify_error(err)
@@ -121,6 +122,7 @@ class SPBackupApp(WxAsyncApp):
         """
         try:
             user: SpotifyUser = await spotify.net.get_user_info(UserState.get_token())
+            UserState.set_user(user)
             # create a dialog with the User information
             wx.CallAfter(
                 ui.dialogs.user.create_dialog, parent=UI.main_frame, userinfo=user)
