@@ -15,6 +15,7 @@ import ui.dialogs.loading
 
 import globals.config
 import globals.token
+from globals.state import UserState
 import spotify.constants
 import spotify.net
 import spotify.debug
@@ -65,8 +66,9 @@ class SPBackupApp(WxAsyncApp):
         gets called when user presses the menuitem re-authenticate
         """
         self.reset()
-        # remove the token
+        # remove the .token.json file
         globals.token.remove()
+        UserState.set_user(None)
         # rerun the process of authentication
         self.run_background_auth_check()
 
