@@ -141,7 +141,8 @@ class LocalDatabase:
 
     async def iter_playlists(self, backup_pk: int, offset: int, limit: int) -> Playlist:
         async with BackupSQlite(self.path, self.error_handler) as cursor:
-            await cursor.execute(f'SELECT * from Playlists WHERE backup_id={backup_pk}')
+            await cursor.execute(
+                f'SELECT * from Playlists WHERE backup_id={backup_pk} LIMIT {limit} OFFSET {offset}')
             async for row in cursor:
                 yield Playlist(*row)
 

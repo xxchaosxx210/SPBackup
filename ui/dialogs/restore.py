@@ -23,6 +23,7 @@ class PaginatePanel(wx.Panel):
         self.offset = 0
         self.limit = limit
         self.items = []
+        self.primary_key: int = 0
 
         staticbox = wx.StaticBox(self, label=title)
         static_sizer = wx.StaticBoxSizer(staticbox, wx.VERTICAL)
@@ -45,6 +46,9 @@ class PaginatePanel(wx.Panel):
 
         self.SetSizerAndFit(static_sizer)
 
+        self.Bind(wx.EVT_BUTTON, self.on_previous_button, self.prev_button)
+        self.Bind(wx.EVT_BUTTON, self.on_next_button, self.next_button)
+
     def create_columns(self, columns: List[dict]):
         for index, column in enumerate(columns):
             self.listctrl.InsertColumn(
@@ -56,6 +60,12 @@ class PaginatePanel(wx.Panel):
     def __on_item_selected(self, evt: wx.ListEvent):
         index: int = evt.GetIndex()
         self.on_item_selected(index)
+
+    def on_previous_button(self, evt: wx.CommandEvent):
+        pass
+
+    def on_next_button(self, evt: wx.CommandEvent):
+        pass
 
     def on_item_selected(self, index: int):
         pass
@@ -103,13 +113,8 @@ class BackupListPanel(PaginatePanel):
     def on_item_selected(self, index: int):
         backup: database.Backup = self.items[index]
         loop = asyncio.get_event_loop()
-        loop.create_task(self.load_playlists(backup.id))
+        loop.create_task(Globals.playlist_panel.load_list(backup_pk=backup.id, offset=0))
         return super().on_item_selected(index)
-
-    async def load_playlists(self, backup_pk: int):
-        playlists: List[database.Playlist] = await \
-            Globals.local_database.get_playlists(backup_pk=backup_pk)
-        await Globals.playlist_panel.populate(playlists)
 
 
 class PlaylistListPanel(PaginatePanel):
@@ -125,7 +130,7 @@ class PlaylistListPanel(PaginatePanel):
                 "width": 300
             }
         ]
-        super().__init__("Playlists", columns, limit=100, *args, **kw)
+        super().__init__("Playlists", columns, limit=25, *args, **kw)
         Globals.playlist_panel = self
 
     async def populate(self, playlists: List[database.Playlist]):
@@ -140,6 +145,25 @@ class PlaylistListPanel(PaginatePanel):
                      index=index, label=playlist.name)
         wx.CallAfter(self.listctrl.SetItem, index=index,
                      column=1, label=playlist.description)
+
+    def on_next_button(self, evt: wx.CommandEvent):
+        loop = asyncio.get_event_loop()
+        loop.create_task(self.load_list(self.primary_key, self.offset))
+        return super().on_next_button(evt)
+
+    def on_previous_button(self, evt: wx.CommandEvent):
+        return super().on_previous_button(evt)
+
+    async def load_list(self, backup_pk: int, offset: int):
+        self.primary_key: int = backup_pk
+        self.listctrl.DeleteAllItems()
+        self.items = []
+        index = 0
+        async for playlist in Globals.local_database.iter_playlists(
+                self.primary_key, offset, self.limit):
+            await self.add_playlist(index, playlist)
+            index += 1
+            self.offset = self.offset + 1
 
 
 class TrackListPanel(PaginatePanel):
@@ -163,6 +187,15 @@ class TrackListPanel(PaginatePanel):
         ]
         super().__init__("Songs", columns, limit=100, *args, **kw)
         Globals.track_panel = self
+
+    def add_track(self, index: int, track: database.Track):
+        self.items.append(track)
+        wx.CallAfter(self.listctrl.InsertItem,
+                     index=index, label=track.name)
+        wx.CallAfter(self.listctrl.SetItem, index=index,
+                     column=1, label="")
+        wx.CallAfter(self.listctrl.SetItem, index=index,
+                     column=2, label="")
 
 
 class RestorePanel(wx.Panel):
